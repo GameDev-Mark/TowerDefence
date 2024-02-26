@@ -23,6 +23,7 @@ public class GenerateMap : MonoBehaviour
     private bool isMapEntranceSpawned = false;
     private bool isMapExitSpawned = false;
     private bool isMapWalkPathCheckpointsSpawned = false;
+    private bool isPathFinderAimingAtcheckpoint = false;
 
 
     private void Start()
@@ -276,33 +277,38 @@ public class GenerateMap : MonoBehaviour
         {
             int newEntrancePickRandomNumInArr = Random.Range(1, edgeOfMapTileList.Count);
             entranceMapTileNumber = edgeOfMapTileList[newEntrancePickRandomNumInArr];
-            Debug.Log("DO not use corner tiles for entrance.. pick another number");
-        }
+            Debug.Log("DO not use corner tiles for entrance.. pick another number (this num is) == " + entranceMapTileNumber);
+            return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
+        } 
 
         if (new[] { 1, 10, 91, 100 }.Contains(exitMapTileNumber)
             || exitMapTileNumber == entranceMapTileNumber)
         {
             int newExitPickRandomNumInArr = Random.Range(1, edgeOfMapTileList.Count);
             exitMapTileNumber = edgeOfMapTileList[newExitPickRandomNumInArr];
-            Debug.Log("DO not use corner tiles for exit.. pick another number");
+            Debug.Log("DO not use corner tiles for exit.. pick another number (this num is) == " + exitMapTileNumber);
+            return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
         }
 
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
         return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
     }
 
+    // called SpawnMapTiles() function - 
     private void GenerateMapTileBoxCollider()
     {
         BoxCollider coll = mapTileGO.AddComponent<BoxCollider>();
         //coll.size *= 1.5f;
     }
 
+    // generates specific color to identify visuals
     private void GenerateMapTileMaterial(GameObject tileGO, Color matColor)
     {
         Renderer rend = tileGO.GetComponent<Renderer>();
         rend.material.color = matColor;
     }
 
+    // called at the start - creates GO 
     private void CreatePathFinder()
     {
         // create GO - give it specifics
@@ -314,6 +320,7 @@ public class GenerateMap : MonoBehaviour
         GenerateMapTileMaterial(continuedPathMapTileGO, Color.blue);
     }
 
+    // called in the FixedUpdate() - once boolean "isMapWalkPathCheckpointsSpawned" is true this function will proceed
     private void PathFinderPhysics()
     {
         // ignore layer ( 8 == Pathfinder )
@@ -330,24 +337,32 @@ public class GenerateMap : MonoBehaviour
 
         if (Physics.Raycast(continuedPathMapTileGO.transform.position, fwd, out hit, 10f, layerMask)) // forward
         {
+
             if (hit.collider.name.ToLower().Contains("checkpoint"))
             {
                 Debug.Log("@raycast hit checkpoint");
+                isPathFinderAimingAtcheckpoint = true;
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.forward) * 10f, Color.yellow);
             }
-
-            var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
-            if (hit.collider.name.ToLower().Contains("entrance") && disBetweenEntranceAndPathFinder < 1.2f)
+            else
             {
-                continuedPathMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
+                isPathFinderAimingAtcheckpoint = false;
+
+                // rotate the continuedPathMapTileGO 180f - 
+                var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
+                if (hit.collider.name.ToLower().Contains("entrance") && disBetweenEntranceAndPathFinder < 1.2f)
+                {
+                    continuedPathMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
+                    Debug.Log("@180f this bitch");
+                }
             }
 
-            if (hit.collider.name.ToLower().Contains("edge"))
+            if (hit.collider.name.ToLower().Contains("edge") && !isPathFinderAimingAtcheckpoint)
             {
                 var disBetweenPathFinderAndEdgeTile = Vector3.Distance(continuedPathMapTileGO.transform.position, hit.transform.position);
                 if (disBetweenPathFinderAndEdgeTile < 1.2f)
                 {
-                    continuedPathMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
+                    continuedPathMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
                 }
             }
         }
@@ -356,7 +371,12 @@ public class GenerateMap : MonoBehaviour
             if (hit.collider.name.ToLower().Contains("checkpoint"))
             {
                 Debug.Log("@raycast hit checkpoint");
+                isPathFinderAimingAtcheckpoint = true;
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.back) * 10f, Color.blue);
+            }
+            else
+            {
+                isPathFinderAimingAtcheckpoint = false;
             }
         }
         if (Physics.Raycast(continuedPathMapTileGO.transform.position, right, out hit, 10f, layerMask)) // right
@@ -364,8 +384,13 @@ public class GenerateMap : MonoBehaviour
             if (hit.collider.name.ToLower().Contains("checkpoint"))
             {
                 Debug.Log("@raycast hit checkpoint");
+                isPathFinderAimingAtcheckpoint = true;
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.right) * 10f, Color.red);
                 continuedPathMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
+            }
+            else
+            {
+                isPathFinderAimingAtcheckpoint = false;
             }
 
             var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
@@ -379,8 +404,13 @@ public class GenerateMap : MonoBehaviour
             if (hit.collider.name.ToLower().Contains("checkpoint"))
             {
                 Debug.Log("@raycast hit checkpoint");
+                isPathFinderAimingAtcheckpoint = true;
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.left) * 10f, Color.green);
                 continuedPathMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
+            }
+            else
+            {
+                isPathFinderAimingAtcheckpoint = false;
             }
 
             var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
