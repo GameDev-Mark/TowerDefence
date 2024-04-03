@@ -1,6 +1,8 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class GenerateMap : MonoBehaviour
 {
@@ -9,6 +11,7 @@ public class GenerateMap : MonoBehaviour
     private int entranceMapTileNumber;
     private int exitMapTileNumber;
     private int checkpointMapTileNumber;
+
     private List<int> tileList;
     private List<int> edgeOfMapTileList;
     private List<int> groundMapTileList;
@@ -17,8 +20,9 @@ public class GenerateMap : MonoBehaviour
     private GameObject entranceMapTileGO;
     private GameObject exitMapTileGO;
     private GameObject edgeMapTileGO;
-    private GameObject continuedPathMapTileGO;
+    private GameObject PathFinderMapTileGO;
     private GameObject walkPathCheckpointMapTileGO;
+    private GameObject parentHolderForMapTiles;
 
     private bool isMapEntranceSpawned = false;
     private bool isMapExitSpawned = false;
@@ -26,28 +30,43 @@ public class GenerateMap : MonoBehaviour
     private bool isPathFinderAimingAtcheckpoint = false;
     private bool isPathFinderInitialSpawnCompleted = false;
 
-
     private void Start()
     {
         CreatePathFinder();
-
         PopulateMapLists();
-
-        xTileMap = 10;
-        yTileMap = 10;
-
-        RandomEntranceAndExitAndWalkPathCheckpointsMapTileNumbers();
-        Invoke("SpawnMapTiles", 0.2f);
-        Invoke("FindAndCreateMapWalkPath", 0.5f);
+        MapTileSize();
+        ParentMapTileHolderCreation();
+        CreateMapSequentially();
     }
 
     private void FixedUpdate()
     {
-        if (isMapWalkPathCheckpointsSpawned)
-            PathFinderPhysics();
+        if (isMapWalkPathCheckpointsSpawned) PathFinderPhysics();
     }
 
-    // fill map lists - called in the start function
+    private void MapTileSize()
+    {
+        xTileMap = 10;
+        yTileMap = 10;
+    }
+
+    // initially called on start().. this sequence controls the how the map is created
+    private void CreateMapSequentially()
+    {
+        Random_Entrance_Exit_WalkPathCheckpoints_MapTileNumbers(() =>
+        {
+            SpawnMapTiles(() =>
+            {
+                FindAndCreateMapWalkPath(() =>
+                {
+                    Debug.Log("@map completion done!");
+                });
+            });
+        });
+
+    }
+
+    // populate map lists - called on start()
     private void PopulateMapLists()
     {
         tileList = new List<int>();
@@ -70,8 +89,8 @@ public class GenerateMap : MonoBehaviour
         };
     }
 
-    // called at the start
-    private void SpawnMapTiles()
+    // called within CreateMapSequentially() function sequence
+    private void SpawnMapTiles(Action onComplete)
     {
         for (int i = 0; i < xTileMap; i++)
         {
@@ -89,20 +108,29 @@ public class GenerateMap : MonoBehaviour
                 FindAndCreateMapEntrance();
                 FindAndCreateMapExit();
                 FindAndCreateMapWalkPathCheckpoints();
+
+                if (j == yTileMap - 1 && i == xTileMap - 1)
+                    onComplete?.Invoke();
             }
         }
     }
 
-    // called at SpawnMapTiles()
+    // called on SpawnMapTiles()
     private void GenerateMapTileGameObject(int xTile, int yTile)
     {
         mapTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
         mapTileGO.transform.position = new Vector3(xTile, 0.5f, yTile);
         mapTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         mapTileGO.name = "Map tile ground";
+
+        if (mapTileGO.transform.parent != parentHolderForMapTiles.transform)
+        {
+            mapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
+            //Debug.Log("parent holder add the map tiles GO..");
+        }
     }
 
-    // called at SpawnMapTiles()
+    // called on SpawnMapTiles()
     private void FindAndCreateMapEntrance()
     {
         if (!isMapEntranceSpawned)
@@ -127,7 +155,7 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    // called at SpawnMapTiles()
+    // called on SpawnMapTiles()
     private void FindAndCreateMapExit()
     {
         if (!isMapExitSpawned)
@@ -152,7 +180,7 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    // called at SpawnMapTiles()
+    // called on SpawnMapTiles()
     private void FindAndCreateMapEdges()
     {
         if (edgeOfMapTileList.Contains(tileList.Count))
@@ -166,18 +194,16 @@ public class GenerateMap : MonoBehaviour
             _entranceInvis.transform.SetParent(edgeMapTileGO.transform);
             _entranceInvis.transform.localScale = Vector3.one * 0.5f;
             _entranceInvis.transform.position = edgeMapTileGO.transform.position + Vector3.up * 0.5f;
-
-            //Debug.Log("@Map edges creation......");
         }
     }
 
+    // invoked on start()
     private void FindAndCreateMapWalkPathCheckpoints()
     {
         // randomly generate checkpoints on ground map ( 1 - 4 )
         if (!isMapWalkPathCheckpointsSpawned)
         {
             //Debug.Log("@ how many ground tiles on the map... " + groundMapTileList.Count);
-
             for (int i = 0; i <= tileList.Count; i++)
             {
                 if (i == checkpointMapTileNumber)
@@ -197,12 +223,10 @@ public class GenerateMap : MonoBehaviour
             }
             //entranceMapTileNumber = edgeOfMapTileList[createCheckpoint];
         }
-
-        // last checkpoint is the exit ( 5 )
     }
 
-    // Invoked at the start 
-    private void FindAndCreateMapWalkPath()
+    // called within CreateMapSequentially() function sequence
+    private void FindAndCreateMapWalkPath(Action onComplete)
     {
         BoxCollider entranceColl = entranceMapTileGO.GetComponent<BoxCollider>();
         // Get the bounds of the collider
@@ -223,8 +247,11 @@ public class GenerateMap : MonoBehaviour
                     GenerateMapTileMaterial(collider.gameObject, Color.cyan);
                     collider.gameObject.name = "Map tile walk path";
 
-                    continuedPathMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
+                    PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     Debug.Log("@INIT POSITION OF PATHFINDER");
+
+                    onComplete?.Invoke();
+
                     InvokeRepeating("ContinueMapWalkPathCreation", 0.25f, 0.25f);
                     return;
                 }
@@ -232,10 +259,10 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    // InvokedRepeating inside the FindAndCreateMapWalkPath() function
+    // InvokedRepeating on FindAndCreateMapWalkPath()
     private void ContinueMapWalkPathCreation()
     {
-        BoxCollider pathColl = continuedPathMapTileGO.GetComponent<BoxCollider>();
+        BoxCollider pathColl = PathFinderMapTileGO.GetComponent<BoxCollider>();
         // Get the bounds of the collider
         Bounds pathBounds = pathColl.bounds;
         // Check for colliders within the bounds of the collider
@@ -243,7 +270,7 @@ public class GenerateMap : MonoBehaviour
 
         foreach (Collider collider in pathColliders)
         {
-            if (collider.name.ToLower().Contains("ground") && continuedPathMapTileGO != collider.gameObject)
+            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject)
             {
                 GenerateMapTileMaterial(collider.gameObject, Color.yellow);
                 collider.name = "Map tile walk path";
@@ -256,13 +283,19 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-        // move the pathfinder GO in the forwards direction * by 1
-        continuedPathMapTileGO.transform.Translate(transform.forward * 1f, Space.Self);
+        MovePathFinderMapTileGO();
         return;
     }
 
-    // called at the start - before spawning tiles
-    private (int, int, int) RandomEntranceAndExitAndWalkPathCheckpointsMapTileNumbers()
+    // called within ContinueMapWalkPathCreation()
+    private void MovePathFinderMapTileGO()
+    {
+        // move the pathfinder GO in the forwards direction * by 1
+        PathFinderMapTileGO.transform.Translate(transform.forward * 1f, Space.Self);
+    }
+
+    // called within CreateMapSequentially() function sequence
+    private (int, int, int) Random_Entrance_Exit_WalkPathCheckpoints_MapTileNumbers(Action onComplete)
     {
         int pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
@@ -273,33 +306,50 @@ public class GenerateMap : MonoBehaviour
         int createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
         checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
 
-        if (new[] { 1, 10, 91, 100 }.Contains(entranceMapTileNumber)
-            || entranceMapTileNumber == exitMapTileNumber)
+        var negatedMapTileNumbers = new[] { 1, 10, 91, 100 };
+
+        if (negatedMapTileNumbers.Contains(entranceMapTileNumber) || entranceMapTileNumber == exitMapTileNumber || negatedMapTileNumbers.Contains(entranceMapTileNumber) && negatedMapTileNumbers.Contains(exitMapTileNumber))
         {
-            int newEntrancePickRandomNumInArr = Random.Range(1, edgeOfMapTileList.Count);
-            entranceMapTileNumber = edgeOfMapTileList[newEntrancePickRandomNumInArr];
-            Debug.Log("DO not use corner tiles for entrance.. pick another number (this num is) == " + entranceMapTileNumber);
-            return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
+            pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+
+            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+            {
+                pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+
+                if (!negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+                {
+                    break;
+                }
+            }
         }
 
-        if (new[] { 1, 10, 91, 100 }.Contains(exitMapTileNumber)
-            || exitMapTileNumber == entranceMapTileNumber)
+        if (negatedMapTileNumbers.Contains(exitMapTileNumber) || exitMapTileNumber == entranceMapTileNumber || negatedMapTileNumbers.Contains(exitMapTileNumber) && negatedMapTileNumbers.Contains(entranceMapTileNumber))
         {
-            int newExitPickRandomNumInArr = Random.Range(1, edgeOfMapTileList.Count);
-            exitMapTileNumber = edgeOfMapTileList[newExitPickRandomNumInArr];
-            Debug.Log("DO not use corner tiles for exit.. pick another number (this num is) == " + exitMapTileNumber);
-            return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
+            pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+
+            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+            {
+                pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+
+                if (!negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+                {
+                    break;
+                }
+            }
         }
+
+        entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
+        exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
+        onComplete.Invoke();
         return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
     }
 
-    // called SpawnMapTiles() function - 
+    // called on SpawnMapTiles()
     private void GenerateMapTileBoxCollider()
     {
         BoxCollider coll = mapTileGO.AddComponent<BoxCollider>();
-        //coll.size *= 1.5f;
     }
 
     // generates specific color to identify visuals
@@ -309,19 +359,19 @@ public class GenerateMap : MonoBehaviour
         rend.material.color = matColor;
     }
 
-    // called at the start - creates GO 
+    // called on start() - creates GO 
     private void CreatePathFinder()
     {
         // create GO - give it specifics
-        continuedPathMapTileGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        continuedPathMapTileGO.name = "PathFinder";
-        continuedPathMapTileGO.layer = 8;
-        continuedPathMapTileGO.AddComponent<BoxCollider>();
-        continuedPathMapTileGO.transform.localScale = Vector3.one * 0.5f;
-        GenerateMapTileMaterial(continuedPathMapTileGO, Color.blue);
+        PathFinderMapTileGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        PathFinderMapTileGO.name = "PathFinder";
+        PathFinderMapTileGO.layer = 8;
+        PathFinderMapTileGO.AddComponent<BoxCollider>();
+        PathFinderMapTileGO.transform.localScale = Vector3.one * 0.5f;
+        GenerateMapTileMaterial(PathFinderMapTileGO, Color.blue);
     }
 
-    // called in the FixedUpdate() - once boolean "isMapWalkPathCheckpointsSpawned" is true this function will proceed
+    // called on FixedUpdate() - once boolean "isMapWalkPathCheckpointsSpawned" is true this function will proceed
     private void PathFinderPhysics()
     {
         // ignore layer ( 8 == Pathfinder )
@@ -329,17 +379,16 @@ public class GenerateMap : MonoBehaviour
         layerMask = ~layerMask;
 
         // Add raycasts in 4 directions ( forward, backwards, right, left )
-        Vector3 fwd = continuedPathMapTileGO.transform.TransformDirection(Vector3.forward);
-        Vector3 back = continuedPathMapTileGO.transform.TransformDirection(Vector3.back);
-        Vector3 right = continuedPathMapTileGO.transform.TransformDirection(Vector3.right);
-        Vector3 left = continuedPathMapTileGO.transform.TransformDirection(Vector3.left);
+        Vector3 fwd = PathFinderMapTileGO.transform.TransformDirection(Vector3.forward);
+        Vector3 back = PathFinderMapTileGO.transform.TransformDirection(Vector3.back);
+        Vector3 right = PathFinderMapTileGO.transform.TransformDirection(Vector3.right);
+        Vector3 left = PathFinderMapTileGO.transform.TransformDirection(Vector3.left);
 
         RaycastHit hit;
 
         // raycasting forwards
-        if (Physics.Raycast(continuedPathMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
-
             if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted)
             {
                 isPathFinderAimingAtcheckpoint = true;
@@ -353,11 +402,11 @@ public class GenerateMap : MonoBehaviour
             // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
             if (hit.collider.name.ToLower().Contains("entrance"))
             {
-                var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
+                var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
                 if (disBetweenEntranceAndPathFinder < 1.2f && !isPathFinderInitialSpawnCompleted)
                 {
                     isPathFinderInitialSpawnCompleted = true;
-                    continuedPathMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
+                    PathFinderMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
                     Debug.Log("Initial spawn, 180f this bitch");
                 }
             }
@@ -365,7 +414,7 @@ public class GenerateMap : MonoBehaviour
             /////// TODO : When pathfinder reaches an edge (1 tile away) figure out which way it must turn if it does not have a checkpoint in reach
             /// NEED TO FIX : when pathfinder reaches an edge (1 tile away) it rotates towards the checkpoint AND also the other direction that we tell
             /// NEED TO prioritize checkpoint over edge movement away 
-            
+
             //if (hit.collider.name.ToLower().Contains("edge"))
             //{
             //    var disBetweenPathFinderAndEdgeTile = Vector3.Distance(continuedPathMapTileGO.transform.position, hit.transform.position);
@@ -379,16 +428,17 @@ public class GenerateMap : MonoBehaviour
         }
 
         // raycasting backwards
-        if (Physics.Raycast(continuedPathMapTileGO.transform.position, back, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
         {
-            if (hit.collider.name.ToLower().Contains("checkpoint"))
+            if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted)
             {
-                //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.back) * 10f, Color.blue);
+                PathFinderMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
+                Debug.Log("@Rotate backwards 180f");
             }
 
             if (hit.collider.name.ToLower().Contains("entrance"))
             {
-                var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
+                var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
                 if (disBetweenEntranceAndPathFinder < 1.2f && !isPathFinderInitialSpawnCompleted)
                 {
                     isPathFinderInitialSpawnCompleted = true;
@@ -398,50 +448,84 @@ public class GenerateMap : MonoBehaviour
         }
 
         // raycasting to the right
-        if (Physics.Raycast(continuedPathMapTileGO.transform.position, right, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, right, out hit, 10f, layerMask))
         {
             if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted)
             {
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.right) * 10f, Color.red);
-                continuedPathMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
+                PathFinderMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
                 Debug.Log("@Rotate right");
             }
 
             // when pathfinder gameobject spawns on the RIGHT side of the map, rotate '-90f' degrees so it is facing forward with it's back to the entrance
             if (hit.collider.name.ToLower().Contains("entrance"))
             {
-                var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
+                var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
                 if (disBetweenEntranceAndPathFinder < 1.2f && !isPathFinderInitialSpawnCompleted)
                 {
                     isPathFinderInitialSpawnCompleted = true;
-                    continuedPathMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
+                    PathFinderMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
                     Debug.Log("Initial entrance : Rotate right");
                 }
             }
         }
 
         // raycasting to the left
-        if (Physics.Raycast(continuedPathMapTileGO.transform.position, left, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, left, out hit, 10f, layerMask))
         {
             if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted)
             {
                 //isPathFinderAimingAtcheckpoint = true;
                 //Debug.DrawRay(continuedPathMapTileGO.transform.position, continuedPathMapTileGO.transform.TransformDirection(Vector3.left) * 10f, Color.green);
-                continuedPathMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
+                PathFinderMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
                 Debug.Log("@Rotate left");
             }
 
             // when pathfinder gameobject spawns on the LEFT side of the map, rotate '90f' degrees so it is facing forward with it's back to the entrance
             if (hit.collider.name.ToLower().Contains("entrance"))
             {
-                var disBetweenEntranceAndPathFinder = Vector3.Distance(continuedPathMapTileGO.transform.position, entranceMapTileGO.transform.position);
+                var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
                 if (disBetweenEntranceAndPathFinder < 1.2f && !isPathFinderInitialSpawnCompleted)
                 {
                     isPathFinderInitialSpawnCompleted = true;
-                    continuedPathMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
+                    PathFinderMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
                     Debug.Log("Initial entrance : Rotate left");
                 }
             }
         }
+    }
+
+    private void ParentMapTileHolderCreation()
+    {
+        parentHolderForMapTiles = new GameObject();
+        parentHolderForMapTiles.name = "ParentHolderForMapTiles";
+    }
+
+    private void ParentMapTileGameObjects()
+    {
+        GameObject groundHolder = new GameObject();
+        groundHolder.name = "Ground Holder";
+
+        GameObject edgeHolder = new GameObject();
+        edgeHolder.name = "Edge Holder";
+
+        foreach (Transform child in parentHolderForMapTiles.transform)
+        {
+            Debug.Log("@parent holder child yes..");
+            //if (child.name.ToLower().Contains("ground"))
+            //{
+            //    child.SetParent(groundHolder.transform);
+            //    Debug.Log("@grounded parent..");
+            //}
+
+            if (child.name.ToLower().Contains("edge"))
+            {
+                child.SetParent(edgeHolder.transform);
+                Debug.Log("@edge parent..");
+            }
+        }
+
+        groundHolder.transform.SetParent(parentHolderForMapTiles.transform);
+        edgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
     }
 }
