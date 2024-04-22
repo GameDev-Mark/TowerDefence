@@ -27,7 +27,6 @@ public class GenerateMap : MonoBehaviour
     private bool isMapEntranceSpawned = false;
     private bool isMapExitSpawned = false;
     private bool isMapWalkPathCheckpointsSpawned = false;
-    private bool isPathFinderAimingAtcheckpoint = false;
     private bool isPathFinderInitialSpawnCompleted = false;
     private bool isFirstCheckpointReached = false;
 
