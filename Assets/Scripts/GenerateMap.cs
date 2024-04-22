@@ -396,15 +396,6 @@ public class GenerateMap : MonoBehaviour
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
-            if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
-            {
-                isPathFinderAimingAtcheckpoint = true;
-            }
-            else
-            {
-                isPathFinderAimingAtcheckpoint = false;
-            }
-
             // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
         }
@@ -412,12 +403,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting backwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
         {
-            if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
-            {
-                PathFinderMapTileGO.transform.Rotate(0f, 180f, 0f, Space.Self);
-                Debug.Log("@Rotate backwards 180f");
-            }
-
+            PathFinderRotation(new Vector3(0f, 180f, 0f), hit, "Rotate backwards");
 
             InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit);
         }
@@ -425,13 +411,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting to the right --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, right, out hit, 10f, layerMask))
         {
-            if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
-            {
-                PathFinderMapTileGO.transform.Rotate(0f, 90f, 0f, Space.Self);
-                Debug.Log("@Rotate right");
-            }
-
-            CheckPointReach_FindExit(new Vector3(0f, 90f, 0f), hit, "Rotate right towards exit");
+            PathFinderRotation(new Vector3(0f, 90f, 0f), hit, "Rotate right");
 
             // when pathfinder gameobject spawns on the RIGHT side of the map, rotate '-90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, -90f, 0f), hit);
@@ -440,19 +420,14 @@ public class GenerateMap : MonoBehaviour
         // raycasting to the left --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, left, out hit, 10f, layerMask))
         {
-            if (hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
-            {
-                PathFinderMapTileGO.transform.Rotate(0f, -90f, 0f, Space.Self);
-                Debug.Log("@Rotate left");
-            }
-
-            CheckPointReach_FindExit(new Vector3(0f, -90f, 0f), hit, "Rotate left towards exit");
+            PathFinderRotation(new Vector3(0f, -90f, 0f), hit, "Rotate left");
 
             // when pathfinder gameobject spawns on the LEFT side of the map, rotate '90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit);
         }
     }
 
+    // called in PathFinderPhysics() to rotate the GO initially on spawn
     private void InitialPathFinderGameObjectRotation(Vector3 rotation, RaycastHit _hit)
     {
         if (_hit.collider.name.ToLower().Contains("entrance"))
@@ -466,10 +441,15 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    private void CheckPointReach_FindExit(Vector3 rotation, RaycastHit _hit, string log)
+    // called within PathFinderPhysics() - rotate the pathfinder in the correct direction
+    private void PathFinderRotation(Vector3 rotation, RaycastHit _hit, string log)
     {
-        // 
-        if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
+        if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached) // --> find exit
+        {
+            PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+            Debug.Log($"Log: {log}");
+        }
+        else if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             Debug.Log($"Log: {log}");
