@@ -29,6 +29,7 @@ public class GenerateMap : MonoBehaviour
     private bool isMapWalkPathCheckpointsSpawned = false;
     private bool isPathFinderInitialSpawnCompleted = false;
     private bool isFirstCheckpointReached = false;
+    private bool isExitOrCheckpointInSightForPathFinder = false;
 
     private void Start()
     {
@@ -252,7 +253,7 @@ public class GenerateMap : MonoBehaviour
 
                     onComplete?.Invoke();
 
-                    InvokeRepeating("ContinueMapWalkPathCreation", 0.25f, 0.25f);
+                    InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, 0.2f);
                     return;
                 }
             }
@@ -277,8 +278,16 @@ public class GenerateMap : MonoBehaviour
             }
             else if (collider.name.ToLower().Contains("checkpoint"))
             {
-                Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
-                isFirstCheckpointReached = true;
+                if (!isFirstCheckpointReached)
+                {
+                    GameObject tempCheckpoint = GameObject.Find("Checkpoint temp");
+                    Destroy(tempCheckpoint);
+                    Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
+                    isFirstCheckpointReached = true;
+                    CancelInvoke();
+                    Invoke("CheckpointReachedCustomWaitTime", 0.2f);
+                    return;
+                }
             }
             else if (collider.name.ToLower().Contains("exit") || collider.name.ToLower().Contains("edge"))
             {
@@ -290,6 +299,12 @@ public class GenerateMap : MonoBehaviour
 
         MovePathFinderMapTileGO();
         return;
+    }
+
+    private void CheckpointReachedCustomWaitTime()
+    {
+        Debug.Log("@Continue path creation after checkpoint..");
+        InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, 0.2f);
     }
 
     // called within ContinueMapWalkPathCreation()
@@ -317,7 +332,7 @@ public class GenerateMap : MonoBehaviour
         {
             pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
 
-            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]) || entranceMapTileNumber == exitMapTileNumber)
             {
                 pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
 
@@ -332,7 +347,7 @@ public class GenerateMap : MonoBehaviour
         {
             pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
 
-            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]) || exitMapTileNumber == entranceMapTileNumber)
             {
                 pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
 
@@ -395,6 +410,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
+            PathFinderCheckForCollisionOfEdge(hit);
             // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
         }
@@ -402,7 +418,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting backwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
         {
-            PathFinderRotation(new Vector3(0f, 180f, 0f), hit, "Rotate backwards");
+            PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, 180f, 0f), hit, "Rotate backwards");
 
             InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit);
         }
@@ -410,7 +426,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting to the right --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, right, out hit, 10f, layerMask))
         {
-            PathFinderRotation(new Vector3(0f, 90f, 0f), hit, "Rotate right");
+            PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, 90f, 0f), hit, "Rotate right");
 
             // when pathfinder gameobject spawns on the RIGHT side of the map, rotate '-90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, -90f, 0f), hit);
@@ -419,7 +435,7 @@ public class GenerateMap : MonoBehaviour
         // raycasting to the left --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, left, out hit, 10f, layerMask))
         {
-            PathFinderRotation(new Vector3(0f, -90f, 0f), hit, "Rotate left");
+            PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, -90f, 0f), hit, "Rotate left");
 
             // when pathfinder gameobject spawns on the LEFT side of the map, rotate '90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit);
@@ -441,17 +457,64 @@ public class GenerateMap : MonoBehaviour
     }
 
     // called within PathFinderPhysics() - rotate the pathfinder in the correct direction
-    private void PathFinderRotation(Vector3 rotation, RaycastHit _hit, string log)
+    private void PathFinderRotateTowardsExitAndCheckpoint(Vector3 rotation, RaycastHit _hit, string log)
     {
-        if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached) // --> find exit
+        if (_hit.collider.name.ToLower().Contains("exit"))
         {
+            isExitOrCheckpointInSightForPathFinder = true;
+            Debug.Log($"isExitOrCheckpointInSightForPathFinder: {isExitOrCheckpointInSightForPathFinder}.. @isFirstCheckpointReached: {isFirstCheckpointReached}..");
+        }
+        else
+        {
+            isExitOrCheckpointInSightForPathFinder = false;
+        }
+
+        if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
+        {
+            //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             Debug.Log($"Log: {log}");
         }
-        else if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
+        if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
+            //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             Debug.Log($"Log: {log}");
+        }
+        //else
+        //{
+        //    isExitOrCheckpointInSightForPathFinder = false;
+        //}
+
+        //if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
+        //{
+        //    PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+        //    Debug.Log($"Log: {log}.. bool: {isExitOrCheckpointInSightForPathFinder}");
+        //}
+    }
+
+    private void PathFinderCheckForCollisionOfEdge(RaycastHit _hit)
+    {
+        // if the first checkpoint has been reached EXTRA condition check -->
+        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
+        {
+            var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
+            if (disBetweenEdgeAndPathFinder < 1.2f)
+            {
+                if (!isExitOrCheckpointInSightForPathFinder)
+                    Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+            }
+        }
+        // if the first checkpoint has NOT been reached EXTRA condition check -->
+        // This is used in the use case of the checkpoint tile being next to an edge tile.
+        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
+        {
+            var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
+            if (disBetweenEdgeAndPathFinder < 1.2f)
+            {
+                if (!isExitOrCheckpointInSightForPathFinder)
+                    Debug.Log($"first checkpoint NOT reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+            }
         }
     }
     #endregion
