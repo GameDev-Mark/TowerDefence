@@ -16,6 +16,9 @@ public class GenerateMap : MonoBehaviour
     private List<int> edgeOfMapTileList;
     private List<int> groundMapTileList;
 
+    private float distanceFromPathFinderToRightSideEdge;
+    private float distanceFromPathFinderToLeftSideEdge;
+
     private GameObject mapTileGO;
     private GameObject entranceMapTileGO;
     private GameObject exitMapTileGO;
@@ -407,6 +410,7 @@ public class GenerateMap : MonoBehaviour
 
         RaycastHit hit;
 
+
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
@@ -428,6 +432,8 @@ public class GenerateMap : MonoBehaviour
         {
             PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, 90f, 0f), hit, "Rotate right");
 
+            CalculateDistanceFromPathFinderToRightSideEdge(hit);
+
             // when pathfinder gameobject spawns on the RIGHT side of the map, rotate '-90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, -90f, 0f), hit);
         }
@@ -437,9 +443,13 @@ public class GenerateMap : MonoBehaviour
         {
             PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, -90f, 0f), hit, "Rotate left");
 
+            CalculateDistanceFromPathFinderToLeftSideEdge(hit);
+
             // when pathfinder gameobject spawns on the LEFT side of the map, rotate '90f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit);
         }
+
+        CalculateDistanceFromPathFinderToEdge();
     }
 
     // called in PathFinderPhysics() to rotate the GO initially on spawn
@@ -502,20 +512,51 @@ public class GenerateMap : MonoBehaviour
             if (disBetweenEdgeAndPathFinder < 1.2f)
             {
                 if (!isExitOrCheckpointInSightForPathFinder)
+                {
                     Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+                    //Debug.Log("distanceFromPathFinderToEdge " + distanceFromPathFinderToEdge);
+                }
             }
         }
-        // if the first checkpoint has NOT been reached EXTRA condition check -->
-        // This is used in the use case of the checkpoint tile being next to an edge tile.
-        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
+        //// if the first checkpoint has NOT been reached EXTRA condition check -->
+        //// This is used in the use case of the checkpoint tile being next to an edge tile.
+        //if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
+        //{
+        //    var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
+        //    if (disBetweenEdgeAndPathFinder < 1.2f)
+        //    {
+        //        if (!isExitOrCheckpointInSightForPathFinder)
+        //            Debug.Log($"first checkpoint NOT reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+        //    }
+        //}
+    }
+
+    private float CalculateDistanceFromPathFinderToRightSideEdge(RaycastHit _hit)
+    {
+        if (_hit.collider.name.ToLower().Contains("edge"))
         {
-            var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
-            if (disBetweenEdgeAndPathFinder < 1.2f)
-            {
-                if (!isExitOrCheckpointInSightForPathFinder)
-                    Debug.Log($"first checkpoint NOT reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
-            }
+            distanceFromPathFinderToRightSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
         }
+        //Debug.Log("right side distance: " +  distanceFromPathFinderToRightSideEdge);
+        return distanceFromPathFinderToRightSideEdge;
+    }
+
+    private float CalculateDistanceFromPathFinderToLeftSideEdge(RaycastHit _hit)
+    {
+        if (_hit.collider.name.ToLower().Contains("edge"))
+        {
+            distanceFromPathFinderToLeftSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
+        }
+        //Debug.Log("left side distance: " +  distanceFromPathFinderToLeftSideEdge);
+        return distanceFromPathFinderToLeftSideEdge;
+    }
+
+    private float CalculateDistanceFromPathFinderToEdge()
+    {
+        float longestDistance = Mathf.Max(distanceFromPathFinderToRightSideEdge, distanceFromPathFinderToLeftSideEdge);
+
+        //Debug.Log("@longestDistance : " + longestDistance);
+        return longestDistance;
     }
     #endregion
 
