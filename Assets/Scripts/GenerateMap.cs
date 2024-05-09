@@ -1,4 +1,3 @@
-using Palmmedia.ReportGenerator.Core.Reporting.Builders.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -57,7 +56,7 @@ public class GenerateMap : MonoBehaviour
         yTileMap = 10;
     }
 
-    // initially called on start().. this sequence controls the how the map is created
+    // initially called on start().. this sequence controls how the map is created
     private void CreateMapSequentially()
     {
         Random_Entrance_Exit_WalkPathCheckpoints_MapTileNumbers(() =>
@@ -210,7 +209,6 @@ public class GenerateMap : MonoBehaviour
         // randomly generate checkpoints on ground map ( 1 - 4 )
         if (!isMapWalkPathCheckpointsSpawned)
         {
-            //Debug.Log("@ how many ground tiles on the map... " + groundMapTileList.Count);
             for (int i = 0; i <= tileList.Count; i++)
             {
                 if (i == checkpointMapTileNumber)
@@ -228,7 +226,6 @@ public class GenerateMap : MonoBehaviour
                     isMapWalkPathCheckpointsSpawned = true;
                 }
             }
-            //entranceMapTileNumber = edgeOfMapTileList[createCheckpoint];
         }
     }
 
@@ -364,6 +361,9 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
+       
+
+
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
@@ -375,7 +375,7 @@ public class GenerateMap : MonoBehaviour
     // called on SpawnMapTiles()
     private void GenerateMapTileBoxCollider()
     {
-        BoxCollider coll = mapTileGO.AddComponent<BoxCollider>();
+        mapTileGO.AddComponent<BoxCollider>();
     }
 
     // generates specific color to identify visuals
@@ -493,16 +493,6 @@ public class GenerateMap : MonoBehaviour
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             Debug.Log($"Log: {log}");
         }
-        //else
-        //{
-        //    isExitOrCheckpointInSightForPathFinder = false;
-        //}
-
-        //if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
-        //{
-        //    PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-        //    Debug.Log($"Log: {log}.. bool: {isExitOrCheckpointInSightForPathFinder}");
-        //}
     }
 
     private void PathFinderCheckForCollisionOfEdge(RaycastHit _hit)
@@ -516,31 +506,17 @@ public class GenerateMap : MonoBehaviour
                 if (!isExitOrCheckpointInSightForPathFinder)
                 {
                     //Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
-                    //Debug.Log("distanceFromPathFinderToEdge " + FindTheLongestDistanceBetweenLeftAndRightDirection());
                     if (ReturnRayCastDirectionLeftOrRight() == "right" && !isExitOrCheckpointInSightForPathFinder)
                     {
                         PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
-                        Debug.Log("distanceFromPathFinderToEdge.. hitting edge.. rotating RIGHT");
                     }
                     else if (ReturnRayCastDirectionLeftOrRight() == "left" && !isExitOrCheckpointInSightForPathFinder)
                     {
                         PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
-                        Debug.Log("distanceFromPathFinderToEdge.. hitting edge.. rotating LEFT");
                     }
                 }
             }
         }
-        //// if the first checkpoint has NOT been reached EXTRA condition check -->
-        //// This is used in the use case of the checkpoint tile being next to an edge tile.
-        //if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached)
-        //{
-        //    var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
-        //    if (disBetweenEdgeAndPathFinder < 1.2f)
-        //    {
-        //        if (!isExitOrCheckpointInSightForPathFinder)
-        //            Debug.Log($"first checkpoint NOT reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
-        //    }
-        //}
     }
 
     private (float, string) CalculateDistanceFromPathFinderToRightSideEdge(RaycastHit _hit)
