@@ -1,3 +1,4 @@
+using Palmmedia.ReportGenerator.Core.Reporting.Builders.Rendering;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -18,6 +19,8 @@ public class GenerateMap : MonoBehaviour
 
     private float distanceFromPathFinderToRightSideEdge;
     private float distanceFromPathFinderToLeftSideEdge;
+
+    private string rayCastDirectionLeftOrRight;
 
     private GameObject mapTileGO;
     private GameObject entranceMapTileGO;
@@ -410,7 +413,6 @@ public class GenerateMap : MonoBehaviour
 
         RaycastHit hit;
 
-
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
@@ -449,7 +451,7 @@ public class GenerateMap : MonoBehaviour
             InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit);
         }
 
-        CalculateDistanceFromPathFinderToEdge();
+        FindTheLongestDistanceBetweenLeftAndRightDirection();
     }
 
     // called in PathFinderPhysics() to rotate the GO initially on spawn
@@ -513,8 +515,18 @@ public class GenerateMap : MonoBehaviour
             {
                 if (!isExitOrCheckpointInSightForPathFinder)
                 {
-                    Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
-                    //Debug.Log("distanceFromPathFinderToEdge " + distanceFromPathFinderToEdge);
+                    //Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+                    //Debug.Log("distanceFromPathFinderToEdge " + FindTheLongestDistanceBetweenLeftAndRightDirection());
+                    if (ReturnRayCastDirectionLeftOrRight() == "right" && !isExitOrCheckpointInSightForPathFinder)
+                    {
+                        PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
+                        Debug.Log("distanceFromPathFinderToEdge.. hitting edge.. rotating RIGHT");
+                    }
+                    else if (ReturnRayCastDirectionLeftOrRight() == "left" && !isExitOrCheckpointInSightForPathFinder)
+                    {
+                        PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
+                        Debug.Log("distanceFromPathFinderToEdge.. hitting edge.. rotating LEFT");
+                    }
                 }
             }
         }
@@ -531,32 +543,47 @@ public class GenerateMap : MonoBehaviour
         //}
     }
 
-    private float CalculateDistanceFromPathFinderToRightSideEdge(RaycastHit _hit)
+    private (float, string) CalculateDistanceFromPathFinderToRightSideEdge(RaycastHit _hit)
     {
         if (_hit.collider.name.ToLower().Contains("edge"))
         {
             distanceFromPathFinderToRightSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
         }
         //Debug.Log("right side distance: " +  distanceFromPathFinderToRightSideEdge);
-        return distanceFromPathFinderToRightSideEdge;
+        return (distanceFromPathFinderToRightSideEdge, rayCastDirectionLeftOrRight);
     }
 
-    private float CalculateDistanceFromPathFinderToLeftSideEdge(RaycastHit _hit)
+    private (float, string) CalculateDistanceFromPathFinderToLeftSideEdge(RaycastHit _hit)
     {
         if (_hit.collider.name.ToLower().Contains("edge"))
         {
             distanceFromPathFinderToLeftSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
         }
         //Debug.Log("left side distance: " +  distanceFromPathFinderToLeftSideEdge);
-        return distanceFromPathFinderToLeftSideEdge;
+        return (distanceFromPathFinderToLeftSideEdge, rayCastDirectionLeftOrRight);
     }
 
-    private float CalculateDistanceFromPathFinderToEdge()
+    private float FindTheLongestDistanceBetweenLeftAndRightDirection()
     {
         float longestDistance = Mathf.Max(distanceFromPathFinderToRightSideEdge, distanceFromPathFinderToLeftSideEdge);
 
-        //Debug.Log("@longestDistance : " + longestDistance);
+        if (distanceFromPathFinderToRightSideEdge > distanceFromPathFinderToLeftSideEdge)
+        {
+            rayCastDirectionLeftOrRight = "right";
+        }
+        else if (distanceFromPathFinderToLeftSideEdge > distanceFromPathFinderToRightSideEdge)
+        {
+            rayCastDirectionLeftOrRight = "left";
+        }
+
+        ReturnRayCastDirectionLeftOrRight();
+
         return longestDistance;
+    }
+
+    private string ReturnRayCastDirectionLeftOrRight()
+    {
+        return rayCastDirectionLeftOrRight;
     }
     #endregion
 
