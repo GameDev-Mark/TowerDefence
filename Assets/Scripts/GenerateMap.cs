@@ -180,6 +180,9 @@ public class GenerateMap : MonoBehaviour
                     _entranceInvis.transform.localScale = Vector3.one * 0.75f;
                     _entranceInvis.transform.position = exitMapTileGO.transform.position + Vector3.up * 0.5f;
 
+                    // remove or disable edge tile in exitmaptileGO parent
+                    exitMapTileGO.transform.GetChild(0).gameObject.SetActive(false);
+
                     isMapExitSpawned = true;
                 }
             }
