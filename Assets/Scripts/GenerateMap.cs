@@ -361,11 +361,15 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-
-
+        // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
+        if(createRandomCheckpointNum == entranceMapTileNumber - 1 || createRandomCheckpointNum == entranceMapTileNumber + 1)
+        {
+            createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+        }
 
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
+        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
 
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
         onComplete.Invoke();
