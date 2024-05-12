@@ -361,7 +361,7 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-       
+
 
 
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
@@ -498,22 +498,19 @@ public class GenerateMap : MonoBehaviour
     private void PathFinderCheckForCollisionOfEdge(RaycastHit _hit)
     {
         // if the first checkpoint has been reached EXTRA condition check -->
-        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
+        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && !isExitOrCheckpointInSightForPathFinder)
         {
             var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
             if (disBetweenEdgeAndPathFinder < 1.2f)
             {
-                if (!isExitOrCheckpointInSightForPathFinder)
+                //Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
+                if (ReturnRayCastDirectionLeftOrRight() == "right")
                 {
-                    //Debug.Log($"first checkpoint reached... 1.2f distance away from an edge tile... we need to rotate left or right..");
-                    if (ReturnRayCastDirectionLeftOrRight() == "right" && !isExitOrCheckpointInSightForPathFinder)
-                    {
-                        PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
-                    }
-                    else if (ReturnRayCastDirectionLeftOrRight() == "left" && !isExitOrCheckpointInSightForPathFinder)
-                    {
-                        PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
-                    }
+                    PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
+                }
+                else if (ReturnRayCastDirectionLeftOrRight() == "left")
+                {
+                    PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
                 }
             }
         }
