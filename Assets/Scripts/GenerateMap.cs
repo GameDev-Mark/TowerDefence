@@ -362,9 +362,10 @@ public class GenerateMap : MonoBehaviour
         }
 
         // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
-        if(createRandomCheckpointNum == entranceMapTileNumber - 1 || createRandomCheckpointNum == entranceMapTileNumber + 1)
+        if(createRandomCheckpointNum == pickEntranceRandomNumInList - 1 || createRandomCheckpointNum == pickEntranceRandomNumInList + 1)
         {
             createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+            Debug.Log("checkpoint is (-1 OR +1) distance from entrance.. randomize checkpoint tile again...");
         }
 
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
@@ -428,8 +429,6 @@ public class GenerateMap : MonoBehaviour
         // raycasting backwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
         {
-            PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, 180f, 0f), hit, "Rotate backwards");
-
             InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit);
         }
 
