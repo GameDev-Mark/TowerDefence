@@ -59,7 +59,7 @@ public class GenerateMap : MonoBehaviour
     // initially called on start().. this sequence controls how the map is created
     private void CreateMapSequentially()
     {
-        Random_Entrance_Exit_WalkPathCheckpoints_MapTileNumbers(() =>
+        GenerateEntranceAndExitAndCheckpoints_MapTileNumbers(() =>
         {
             SpawnMapTiles(() =>
             {
@@ -321,7 +321,7 @@ public class GenerateMap : MonoBehaviour
     }
 
     // called within CreateMapSequentially() function sequence
-    private (int, int, int) Random_Entrance_Exit_WalkPathCheckpoints_MapTileNumbers(Action onComplete)
+    private (int, int, int) GenerateEntranceAndExitAndCheckpoints_MapTileNumbers(Action onComplete)
     {
         int pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
@@ -332,43 +332,56 @@ public class GenerateMap : MonoBehaviour
         int createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
         checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
 
-        var negatedMapTileNumbers = new[] { 1, 10, 91, 100 };
+        var negatedEntranceMapTileNumbers = new[] { 1, 10, 91, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
+            exitMapTileNumber - 9, entranceMapTileNumber = exitMapTileNumber };
 
-        if (negatedMapTileNumbers.Contains(entranceMapTileNumber) || entranceMapTileNumber == exitMapTileNumber || negatedMapTileNumbers.Contains(entranceMapTileNumber) && negatedMapTileNumbers.Contains(exitMapTileNumber))
+        if (negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber)
+            || negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber) && negatedEntranceMapTileNumbers.Contains(exitMapTileNumber))
         {
             pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-
-            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]) || entranceMapTileNumber == exitMapTileNumber)
+            Debug.Log("Need to randomize entrance tile number again.. " + entranceMapTileNumber);
+            while (negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]) || pickEntranceRandomNumInList == pickExitRandomNumInList)
             {
                 pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-
-                if (!negatedMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+                if (!negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
                 {
                     break;
                 }
             }
         }
 
-        if (negatedMapTileNumbers.Contains(exitMapTileNumber) || exitMapTileNumber == entranceMapTileNumber || negatedMapTileNumbers.Contains(exitMapTileNumber) && negatedMapTileNumbers.Contains(entranceMapTileNumber))
+        var negatedExitMapTileNumbers = new[] { 1, 10, 91, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
+            entranceMapTileNumber - 9, exitMapTileNumber = entranceMapTileNumber };
+
+        if (negatedExitMapTileNumbers.Contains(exitMapTileNumber)
+            || negatedExitMapTileNumbers.Contains(exitMapTileNumber) && negatedExitMapTileNumbers.Contains(entranceMapTileNumber))
         {
             pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-
-            while (negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]) || exitMapTileNumber == entranceMapTileNumber)
+            Debug.Log("Need to randomize exit tile number again.. " + exitMapTileNumber);
+            while (negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]) || pickExitRandomNumInList == pickEntranceRandomNumInList)
             {
                 pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-
-                if (!negatedMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+                if (!negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
                 {
                     break;
                 }
             }
         }
 
+        var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
+        exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
+
         // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
-        if(createRandomCheckpointNum == pickEntranceRandomNumInList - 1 || createRandomCheckpointNum == pickEntranceRandomNumInList + 1)
+        if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
         {
             createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-            Debug.Log("checkpoint is (-1 OR +1) distance from entrance.. randomize checkpoint tile again...");
+
+            while (negatedCheckpointMapTileNumbers.Contains(groundMapTileList[createRandomCheckpointNum]))
+            {
+                createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+                if (!negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
+                    break;
+            }
         }
 
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
@@ -424,7 +437,10 @@ public class GenerateMap : MonoBehaviour
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
-            PathFinderCheckForCollisionOfEdge(hit);
+            if (!isExitOrCheckpointInSightForPathFinder)
+            {
+                PathFinderCheckForCollisionOfEdge(hit);
+            }
             // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
             InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
         }
@@ -491,20 +507,20 @@ public class GenerateMap : MonoBehaviour
         {
             //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            Debug.Log($"Log: {log}");
+            Debug.Log($"Exit is in sight: {log}");
         }
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
             //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            Debug.Log($"Log: {log}");
+            Debug.Log($"Checkpoint is in sight: {log}");
         }
     }
 
     private void PathFinderCheckForCollisionOfEdge(RaycastHit _hit)
     {
         // if the first checkpoint has been reached EXTRA condition check -->
-        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && !isExitOrCheckpointInSightForPathFinder)
+        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
         {
             var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
             if (disBetweenEdgeAndPathFinder < 1.2f)
@@ -513,10 +529,12 @@ public class GenerateMap : MonoBehaviour
                 if (ReturnRayCastDirectionLeftOrRight() == "right")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
+                    Debug.Log("Rotate right .. collision to edge...");
                 }
                 else if (ReturnRayCastDirectionLeftOrRight() == "left")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
+                    Debug.Log("Rotate left .. collision to edge...");
                 }
             }
         }
