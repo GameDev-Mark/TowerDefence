@@ -348,6 +348,8 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
+        entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
+
         var negatedExitMapTileNumbers = new[] { 1, 10, 91, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
             entranceMapTileNumber - 9, exitMapTileNumber = entranceMapTileNumber };
 
@@ -366,8 +368,11 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
+        exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
+
         var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
         exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
+        Debug.Log($"PRE CP Entrance number: {entranceMapTileNumber} && PRE CP Exit number: {exitMapTileNumber} && PRE CP Checkpoint number: {checkpointMapTileNumber}");
 
         // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
         if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
@@ -385,8 +390,6 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-        entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
-        exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
         checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
 
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
