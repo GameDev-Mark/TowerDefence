@@ -256,10 +256,8 @@ public class GenerateMap : MonoBehaviour
 
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     Debug.Log("@INIT POSITION OF PATHFINDER");
-
                     onComplete?.Invoke();
-
-                    InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, 0.2f);
+                    InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, 0.2f); // wait X time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
                 }
             }
@@ -339,7 +337,7 @@ public class GenerateMap : MonoBehaviour
             || negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber) && negatedEntranceMapTileNumbers.Contains(exitMapTileNumber))
         {
             pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-            Debug.Log("Need to randomize entrance tile number again.. " + entranceMapTileNumber);
+            //Debug.Log("Need to randomize entrance tile number again.. " + entranceMapTileNumber);
             while (negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]) || pickEntranceRandomNumInList == pickExitRandomNumInList)
             {
                 pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
@@ -357,7 +355,7 @@ public class GenerateMap : MonoBehaviour
             || negatedExitMapTileNumbers.Contains(exitMapTileNumber) && negatedExitMapTileNumbers.Contains(entranceMapTileNumber))
         {
             pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-            Debug.Log("Need to randomize exit tile number again.. " + exitMapTileNumber);
+            //Debug.Log("Need to randomize exit tile number again.. " + exitMapTileNumber);
             while (negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]) || pickExitRandomNumInList == pickEntranceRandomNumInList)
             {
                 pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
@@ -375,12 +373,15 @@ public class GenerateMap : MonoBehaviour
         if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
         {
             createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-
+            Debug.Log($"randomize checkpoint tile.. {checkpointMapTileNumber}...");
             while (negatedCheckpointMapTileNumbers.Contains(groundMapTileList[createRandomCheckpointNum]))
             {
                 createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+                Debug.Log($"randomize checkpoint tile AGAIN!.. {checkpointMapTileNumber}...");
                 if (!negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
+                {
                     break;
+                }
             }
         }
 
@@ -437,12 +438,13 @@ public class GenerateMap : MonoBehaviour
         // raycasting forwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
         {
+            // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
+            InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
+
             if (!isExitOrCheckpointInSightForPathFinder)
             {
                 PathFinderCheckForCollisionOfEdge(hit);
             }
-            // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
-            InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
         }
 
         // raycasting backwards --->
@@ -479,10 +481,10 @@ public class GenerateMap : MonoBehaviour
     // called in PathFinderPhysics() to rotate the GO initially on spawn
     private void InitialPathFinderGameObjectRotation(Vector3 rotation, RaycastHit _hit)
     {
-        if (_hit.collider.name.ToLower().Contains("entrance"))
+        if (_hit.collider.name.ToLower().Contains("entrance") && !isPathFinderInitialSpawnCompleted)
         {
             var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
-            if (disBetweenEntranceAndPathFinder < 1.2f && !isPathFinderInitialSpawnCompleted)
+            if (disBetweenEntranceAndPathFinder < 1.2f)
             {
                 isPathFinderInitialSpawnCompleted = true;
                 PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
