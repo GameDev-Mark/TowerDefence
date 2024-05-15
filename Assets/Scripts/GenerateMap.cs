@@ -257,7 +257,7 @@ public class GenerateMap : MonoBehaviour
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     Debug.Log("@INIT POSITION OF PATHFINDER");
                     onComplete?.Invoke();
-                    InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, 0.2f); // wait X time - for the initial spawn of pathfinder gameobject to rotate correctly
+                    InvokeRepeating("ContinueMapWalkPathCreation", 0.25f, 0.25f); // wait X time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
                 }
             }
@@ -372,7 +372,6 @@ public class GenerateMap : MonoBehaviour
 
         var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
         exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
-        Debug.Log($"PRE CP Entrance number: {entranceMapTileNumber} && PRE CP Exit number: {exitMapTileNumber} && PRE CP Checkpoint number: {checkpointMapTileNumber}");
 
         // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
         if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
@@ -438,22 +437,10 @@ public class GenerateMap : MonoBehaviour
 
         RaycastHit hit;
 
-        // raycasting forwards --->
-        if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
-        {
-            // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
-            InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit);
-
-            if (!isExitOrCheckpointInSightForPathFinder)
-            {
-                PathFinderCheckForCollisionOfEdge(hit);
-            }
-        }
-
         // raycasting backwards --->
         if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
         {
-            InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit);
+            InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit, "0f backwards");
         }
 
         // raycasting to the right --->
@@ -464,7 +451,7 @@ public class GenerateMap : MonoBehaviour
             CalculateDistanceFromPathFinderToRightSideEdge(hit);
 
             // when pathfinder gameobject spawns on the RIGHT side of the map, rotate '-90f' degrees so it is facing forward with it's back to the entrance
-            InitialPathFinderGameObjectRotation(new Vector3(0f, -90f, 0f), hit);
+            InitialPathFinderGameObjectRotation(new Vector3(0f, -90f, 0f), hit, "-90f right");
         }
 
         // raycasting to the left --->
@@ -475,14 +462,29 @@ public class GenerateMap : MonoBehaviour
             CalculateDistanceFromPathFinderToLeftSideEdge(hit);
 
             // when pathfinder gameobject spawns on the LEFT side of the map, rotate '90f' degrees so it is facing forward with it's back to the entrance
-            InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit);
+            InitialPathFinderGameObjectRotation(new Vector3(0f, 90f, 0f), hit, "90f left");
+        }
+
+        // raycasting forwards --->
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
+        {
+            if (!isExitOrCheckpointInSightForPathFinder)
+            {
+                // when pathfinder gameobject spawns on the TOP side of the map, rotate '180f' degrees so it is facing forward with it's back to the entrance
+                InitialPathFinderGameObjectRotation(new Vector3(0f, 180f, 0f), hit, "180f forward");
+                PathFinderCheckForCollisionOfEdge(hit);
+            }
+            else
+            {
+                InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit, "0f forward");
+            }
         }
 
         FindTheLongestDistanceBetweenLeftAndRightDirection();
     }
 
     // called in PathFinderPhysics() to rotate the GO initially on spawn
-    private void InitialPathFinderGameObjectRotation(Vector3 rotation, RaycastHit _hit)
+    private void InitialPathFinderGameObjectRotation(Vector3 rotation, RaycastHit _hit, string debug)
     {
         if (_hit.collider.name.ToLower().Contains("entrance") && !isPathFinderInitialSpawnCompleted)
         {
@@ -490,7 +492,8 @@ public class GenerateMap : MonoBehaviour
             if (disBetweenEntranceAndPathFinder < 1.2f)
             {
                 isPathFinderInitialSpawnCompleted = true;
-                PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+                PathFinderMapTileGO.transform.rotation = Quaternion.Euler(rotation);
+                Debug.Log("initial rotation = " + debug + "Rotation: " + rotation);
             }
         }
     }
@@ -498,7 +501,7 @@ public class GenerateMap : MonoBehaviour
     // called within PathFinderPhysics() - rotate the pathfinder in the correct direction
     private void PathFinderRotateTowardsExitAndCheckpoint(Vector3 rotation, RaycastHit _hit, string log)
     {
-        if (_hit.collider.name.ToLower().Contains("exit"))
+        if (_hit.collider.name.ToLower().Contains("exit") || _hit.collider.name.ToLower().Contains("checkpoint"))
         {
             isExitOrCheckpointInSightForPathFinder = true;
             Debug.Log($"isExitOrCheckpointInSightForPathFinder: {isExitOrCheckpointInSightForPathFinder}.. @isFirstCheckpointReached: {isFirstCheckpointReached}..");
