@@ -11,10 +11,12 @@ public class GenerateMap : MonoBehaviour
     private int entranceMapTileNumber;
     private int exitMapTileNumber;
     private int checkpointMapTileNumber;
+    private int waypointCounter;
 
     private List<int> tileList;
     private List<int> edgeOfMapTileList;
     private List<int> groundMapTileList;
+    public List<GameObject> waypointsList;
 
     private float distanceFromPathFinderToRightSideEdge;
     private float distanceFromPathFinderToLeftSideEdge;
@@ -421,6 +423,19 @@ public class GenerateMap : MonoBehaviour
         GenerateMapTileMaterial(PathFinderMapTileGO, Color.blue);
     }
 
+    // this function is called whenever the pathfinder rotates and turns a different direction
+    // this will allow waypoints to be created so as the characters will be able to follow these waypoints accordingaly along the path
+    private void CreateWaypoint()
+    {
+        waypointCounter++;
+        GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        waypoint.name = "Waypoint_" + waypointCounter;
+        waypoint.transform.localScale = Vector3.one * 0.25f;
+        waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, 0.75f, PathFinderMapTileGO.transform.position.z);
+        GenerateMapTileMaterial(waypoint, Color.cyan);
+        waypointsList.Add(waypoint);
+    }
+
     #region Path finder physics updater
     // called on FixedUpdate() - once boolean "isMapWalkPathCheckpointsSpawned" is true this function will proceed
     private void PathFinderPhysics()
@@ -515,12 +530,14 @@ public class GenerateMap : MonoBehaviour
         {
             //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+            CreateWaypoint();
             Debug.Log($"Exit is in sight: {log}");
         }
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
             //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+            CreateWaypoint();
             Debug.Log($"Checkpoint is in sight: {log}");
         }
     }
@@ -537,11 +554,13 @@ public class GenerateMap : MonoBehaviour
                 if (ReturnRayCastDirectionLeftOrRight() == "right")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
+                    CreateWaypoint();
                     Debug.Log("Rotate right .. collision to edge...");
                 }
                 else if (ReturnRayCastDirectionLeftOrRight() == "left")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
+                    CreateWaypoint();
                     Debug.Log("Rotate left .. collision to edge...");
                 }
             }
