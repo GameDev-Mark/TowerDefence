@@ -16,7 +16,8 @@ public class GenerateMap : MonoBehaviour
     private List<int> tileList;
     private List<int> edgeOfMapTileList;
     private List<int> groundMapTileList;
-    public List<GameObject> waypointsList;
+
+    [SerializeField] public List<GameObject> waypointsList;
 
     private float distanceFromPathFinderToRightSideEdge;
     private float distanceFromPathFinderToLeftSideEdge;
@@ -24,8 +25,8 @@ public class GenerateMap : MonoBehaviour
     private string rayCastDirectionLeftOrRight;
 
     private GameObject mapTileGO;
-    private GameObject entranceMapTileGO;
-    private GameObject exitMapTileGO;
+    [SerializeField] public GameObject entranceMapTileGO;
+    [SerializeField] private GameObject exitMapTileGO;
     private GameObject edgeMapTileGO;
     private GameObject PathFinderMapTileGO;
     private GameObject walkPathCheckpointMapTileGO;
@@ -299,6 +300,7 @@ public class GenerateMap : MonoBehaviour
             {
                 Debug.Log("END OF THE LINE.. Colliding with: " + collider.gameObject.name);
                 CancelInvoke();
+                CreateWaypoint();
                 return;
             }
         }
