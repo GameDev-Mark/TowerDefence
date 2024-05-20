@@ -8,6 +8,7 @@ public class EnemySpawner : MonoBehaviour
     private void Start()
     {
         generateMap = FindObjectOfType<GenerateMap>();
+        // this we can randomize and do more complex shit with
         InvokeRepeating("SpawnEnemies", 5f, 1f);
     }
 

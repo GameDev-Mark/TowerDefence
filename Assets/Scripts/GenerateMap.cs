@@ -260,7 +260,7 @@ public class GenerateMap : MonoBehaviour
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     Debug.Log("@INIT POSITION OF PATHFINDER");
                     onComplete?.Invoke();
-                    InvokeRepeating("ContinueMapWalkPathCreation", 0.25f, 0.25f); // wait X time - for the initial spawn of pathfinder gameobject to rotate correctly
+                    InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, 0.25f); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
                 }
             }

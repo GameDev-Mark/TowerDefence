@@ -18,7 +18,7 @@ public class EnemyBehaviour : MonoBehaviour
         EnemyMovement();
     }
 
-    private void EnemyMovement() 
+    private void EnemyMovement()
     {
         // increment counter every time enemy hits checkpoint
         // catch this counter so it does not go over the actual waypoint list count
@@ -28,6 +28,13 @@ public class EnemyBehaviour : MonoBehaviour
             {
                 CounterHowManyWaypointsHasEnemyHit++;
             }
+        }
+
+        // when enemy reaches exit, destroy()
+        if (transform.position == generateMap.waypointsList[generateMap.waypointsList.Count - 1].transform.position)
+        {
+            Destroy(gameObject);
+            //Debug.Log("@DESTROY ENEMY.. AT EXIT...");
         }
 
         // rotate towards the waypoint first
