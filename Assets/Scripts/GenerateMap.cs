@@ -21,6 +21,7 @@ public class GenerateMap : MonoBehaviour
 
     private float distanceFromPathFinderToRightSideEdge;
     private float distanceFromPathFinderToLeftSideEdge;
+    private float pathFinderMoveSpeed;
 
     private string rayCastDirectionLeftOrRight;
 
@@ -108,7 +109,7 @@ public class GenerateMap : MonoBehaviour
                 GenerateMapTileGameObject(i, j);
 
                 GenerateMapTileBoxCollider();
-                GenerateMapTileMaterial(mapTileGO, Color.green);
+                GenerateMapTileMaterial(mapTileGO, "BlackRock");
 
                 tileList.Add(j);
                 //Debug.Log("TileList == " + tileList.Count);
@@ -150,13 +151,14 @@ public class GenerateMap : MonoBehaviour
                 {
                     entranceMapTileGO = mapTileGO;
                     entranceMapTileGO.name = "Map tile entrance";
-                    GenerateMapTileMaterial(mapTileGO, Color.grey);
 
-                    GameObject _entranceInvis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                    _entranceInvis.name = "Entrance temp";
-                    _entranceInvis.transform.SetParent(entranceMapTileGO.transform);
-                    _entranceInvis.transform.localScale = Vector3.one * 0.75f;
-                    _entranceInvis.transform.position = entranceMapTileGO.transform.position + Vector3.up * 0.5f;
+                    GameObject _entranceGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    _entranceGO.name = "Entrance temp";
+                    _entranceGO.transform.SetParent(entranceMapTileGO.transform);
+                    _entranceGO.transform.localScale = Vector3.one * 0.75f;
+                    _entranceGO.transform.position = entranceMapTileGO.transform.position + Vector3.up * 0.5f;
+
+                    GenerateMapTileMaterial(_entranceGO, "Entrance_Exit");
 
                     isMapEntranceSpawned = true;
                 }
@@ -175,16 +177,17 @@ public class GenerateMap : MonoBehaviour
                 {
                     exitMapTileGO = mapTileGO;
                     exitMapTileGO.name = "Map tile exit";
-                    GenerateMapTileMaterial(mapTileGO, Color.blue);
 
-                    GameObject _entranceInvis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
-                    _entranceInvis.name = "Exit temp";
-                    _entranceInvis.transform.SetParent(exitMapTileGO.transform);
-                    _entranceInvis.transform.localScale = Vector3.one * 0.75f;
-                    _entranceInvis.transform.position = exitMapTileGO.transform.position + Vector3.up * 0.5f;
+                    GameObject _exitGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
+                    _exitGO.name = "Exit temp";
+                    _exitGO.transform.SetParent(exitMapTileGO.transform);
+                    _exitGO.transform.localScale = Vector3.one * 0.75f;
+                    _exitGO.transform.position = exitMapTileGO.transform.position + Vector3.up * 0.5f;
+
+                    GenerateMapTileMaterial(_exitGO, "Entrance_Exit");
 
                     // remove or disable edge tile in exitmaptileGO parent
-                    exitMapTileGO.transform.GetChild(0).gameObject.SetActive(false);
+                    Destroy(exitMapTileGO.transform.GetChild(0).gameObject);
 
                     isMapExitSpawned = true;
                 }
@@ -199,13 +202,15 @@ public class GenerateMap : MonoBehaviour
         {
             edgeMapTileGO = mapTileGO;
             edgeMapTileGO.name = "Map tile edge";
-            GenerateMapTileMaterial(mapTileGO, Color.red);
+            GenerateMapTileMaterial(edgeMapTileGO, "LavaRock");
 
             GameObject _entranceInvis = GameObject.CreatePrimitive(PrimitiveType.Cube);
             _entranceInvis.name = "Edge temp";
             _entranceInvis.transform.SetParent(edgeMapTileGO.transform);
             _entranceInvis.transform.localScale = Vector3.one * 0.5f;
             _entranceInvis.transform.position = edgeMapTileGO.transform.position + Vector3.up * 0.5f;
+
+            TurnOffMeshRenderer(_entranceInvis);
         }
     }
 
@@ -228,7 +233,7 @@ public class GenerateMap : MonoBehaviour
                     _checkpointInvis.transform.localScale = Vector3.one * 0.5f;
                     _checkpointInvis.transform.position = walkPathCheckpointMapTileGO.transform.position + Vector3.up * 0.5f;
 
-                    GenerateMapTileMaterial(mapTileGO, Color.white);
+                    GenerateMapTileMaterial(mapTileGO, "GrassGround");
                     isMapWalkPathCheckpointsSpawned = true;
                 }
             }
@@ -254,13 +259,13 @@ public class GenerateMap : MonoBehaviour
 
                 if (collider.name.ToLower().Contains("ground") && dis == 1)
                 {
-                    GenerateMapTileMaterial(collider.gameObject, Color.cyan);
+                    GenerateMapTileMaterial(collider.gameObject, "GrassGround");
                     collider.gameObject.name = "Map tile walk path";
 
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     Debug.Log("@INIT POSITION OF PATHFINDER");
                     onComplete?.Invoke();
-                    InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, 0.25f); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
+                    InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, pathFinderMoveSpeed); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
                 }
             }
@@ -280,7 +285,7 @@ public class GenerateMap : MonoBehaviour
         {
             if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject)
             {
-                GenerateMapTileMaterial(collider.gameObject, Color.yellow);
+                GenerateMapTileMaterial(collider.gameObject, "GrassGround");
                 collider.name = "Map tile walk path";
             }
             else if (collider.name.ToLower().Contains("checkpoint"))
@@ -312,7 +317,7 @@ public class GenerateMap : MonoBehaviour
     private void CheckpointReachedCustomWaitTime()
     {
         Debug.Log("@Continue path creation after checkpoint..");
-        InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, 0.2f);
+        InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, pathFinderMoveSpeed);
     }
 
     // called within ContinueMapWalkPathCreation()
@@ -354,7 +359,7 @@ public class GenerateMap : MonoBehaviour
 
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
 
-        var negatedExitMapTileNumbers = new[] { 1, 10, 91, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
+        var negatedExitMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
             entranceMapTileNumber - 9, exitMapTileNumber = entranceMapTileNumber };
 
         if (negatedExitMapTileNumbers.Contains(exitMapTileNumber)
@@ -407,10 +412,10 @@ public class GenerateMap : MonoBehaviour
     }
 
     // generates specific color to identify visuals
-    private void GenerateMapTileMaterial(GameObject tileGO, Color matColor)
+    private void GenerateMapTileMaterial(GameObject tileGO, string resourceName)
     {
         Renderer rend = tileGO.GetComponent<Renderer>();
-        rend.material.color = matColor;
+        rend.material = Resources.Load($"Materials/{resourceName}") as Material;
     }
 
     // called on start() - creates GO 
@@ -422,7 +427,8 @@ public class GenerateMap : MonoBehaviour
         PathFinderMapTileGO.layer = 8;
         PathFinderMapTileGO.AddComponent<BoxCollider>();
         PathFinderMapTileGO.transform.localScale = Vector3.one * 0.5f;
-        GenerateMapTileMaterial(PathFinderMapTileGO, Color.blue);
+        GenerateMapTileMaterial(PathFinderMapTileGO, "PathFinder");
+        pathFinderMoveSpeed = 0.25f;
     }
 
     // this function is called whenever the pathfinder rotates and turns a different direction
@@ -434,7 +440,7 @@ public class GenerateMap : MonoBehaviour
         waypoint.name = "Waypoint_" + waypointCounter;
         waypoint.transform.localScale = Vector3.one * 0.25f;
         waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, 0.75f, PathFinderMapTileGO.transform.position.z);
-        GenerateMapTileMaterial(waypoint, Color.cyan);
+        GenerateMapTileMaterial(waypoint, "PathFinder");
         waypointsList.Add(waypoint);
     }
 
@@ -530,14 +536,12 @@ public class GenerateMap : MonoBehaviour
 
         if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
         {
-            //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             CreateWaypoint();
             Debug.Log($"Exit is in sight: {log}");
         }
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
-            //isExitOrCheckpointInSightForPathFinder = true;
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
             CreateWaypoint();
             Debug.Log($"Checkpoint is in sight: {log}");
@@ -648,4 +652,16 @@ public class GenerateMap : MonoBehaviour
         edgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
     }
     #endregion
+
+    private void TurnOffMeshRenderer(GameObject _mr)
+    {
+        try
+        {
+            _mr.GetComponent<MeshRenderer>().enabled = false;
+        }
+        catch
+        {
+            Debug.Log($"There is no meshrenderer to disable on {_mr.name} gameobject");
+        }
+    }
 }
