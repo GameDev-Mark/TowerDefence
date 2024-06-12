@@ -109,7 +109,7 @@ public class GenerateMap : MonoBehaviour
                 GenerateMapTileGameObject(i, j);
 
                 GenerateMapTileBoxCollider();
-                GenerateMapTileMaterial(mapTileGO, "BlackRock");
+                GenerateMapTileMaterial(mapTileGO, "LavaRock");
 
                 tileList.Add(j);
                 //Debug.Log("TileList == " + tileList.Count);
@@ -151,6 +151,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     entranceMapTileGO = mapTileGO;
                     entranceMapTileGO.name = "Map tile entrance";
+                    GenerateMapTileMaterial(entranceMapTileGO, "BlackRock");
 
                     GameObject _entranceGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                     _entranceGO.name = "Entrance temp";
@@ -177,6 +178,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     exitMapTileGO = mapTileGO;
                     exitMapTileGO.name = "Map tile exit";
+                    GenerateMapTileMaterial(exitMapTileGO, "BlackRock");
 
                     GameObject _exitGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                     _exitGO.name = "Exit temp";
@@ -202,7 +204,7 @@ public class GenerateMap : MonoBehaviour
         {
             edgeMapTileGO = mapTileGO;
             edgeMapTileGO.name = "Map tile edge";
-            GenerateMapTileMaterial(edgeMapTileGO, "LavaRock");
+            //GenerateMapTileMaterial(edgeMapTileGO, "LavaRock");
 
             GameObject _entranceInvis = GameObject.CreatePrimitive(PrimitiveType.Cube);
             _entranceInvis.name = "Edge temp";
