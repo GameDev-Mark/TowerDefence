@@ -338,8 +338,14 @@ public class GenerateMap : MonoBehaviour
         int pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
-        int createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
+        // TEMP FIX
+        // Create a way to put the checkpoint in the middle of the map (specified tiles) 
+        // Issue with applying the random number to the correct tile..
+        var specificCheckPointNums = new[] { 45, 46, 56, 56 };
+        System.Random rd = new System.Random();
+        int random = rd.Next(specificCheckPointNums.Length);
+        int createRandomCheckpointNum = specificCheckPointNums[random];
+        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
 
         var negatedEntranceMapTileNumbers = new[] { 1, 10, 91, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
             exitMapTileNumber - 9, entranceMapTileNumber = exitMapTileNumber };
@@ -381,26 +387,26 @@ public class GenerateMap : MonoBehaviour
 
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
-        var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
-        exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
+        //var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
+        //exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
 
-        // randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
-        if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
-        {
-            createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-            Debug.Log($"randomize checkpoint tile.. {checkpointMapTileNumber}...");
-            while (negatedCheckpointMapTileNumbers.Contains(groundMapTileList[createRandomCheckpointNum]))
-            {
-                createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-                Debug.Log($"randomize checkpoint tile AGAIN!.. {checkpointMapTileNumber}...");
-                if (!negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
-                {
-                    break;
-                }
-            }
-        }
+        //// randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
+        //if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
+        //{
+        //    createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+        //    Debug.Log($"randomize checkpoint tile.. {checkpointMapTileNumber}...");
+        //    while (negatedCheckpointMapTileNumbers.Contains(groundMapTileList[createRandomCheckpointNum]))
+        //    {
+        //        createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
+        //        Debug.Log($"randomize checkpoint tile AGAIN!.. {checkpointMapTileNumber}...");
+        //        if (!negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
+        //        {
+        //            break;
+        //        }
+        //    }
+        //}
 
-        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
+        //checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
 
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
         onComplete.Invoke();
