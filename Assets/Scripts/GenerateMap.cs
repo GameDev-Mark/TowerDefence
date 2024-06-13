@@ -341,7 +341,7 @@ public class GenerateMap : MonoBehaviour
 
         // ENTRANCE -->
         var negatedEntranceMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
-            exitMapTileNumber - 9, entranceMapTileNumber = exitMapTileNumber };
+            exitMapTileNumber - 9, exitMapTileNumber + 10, exitMapTileNumber - 10, exitMapTileNumber - 1, exitMapTileNumber + 1, entranceMapTileNumber = exitMapTileNumber };
 
         if (negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber)
             || negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber) && negatedEntranceMapTileNumbers.Contains(exitMapTileNumber))
@@ -361,7 +361,7 @@ public class GenerateMap : MonoBehaviour
 
         // EXIT -->
         var negatedExitMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
-            entranceMapTileNumber - 9, exitMapTileNumber = entranceMapTileNumber };
+            entranceMapTileNumber - 9, entranceMapTileNumber + 10, entranceMapTileNumber - 10, entranceMapTileNumber - 1, entranceMapTileNumber + 1, exitMapTileNumber = entranceMapTileNumber };
 
         if (negatedExitMapTileNumbers.Contains(exitMapTileNumber)
             || negatedExitMapTileNumbers.Contains(exitMapTileNumber) && negatedExitMapTileNumbers.Contains(entranceMapTileNumber))
