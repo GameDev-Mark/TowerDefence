@@ -265,7 +265,7 @@ public class GenerateMap : MonoBehaviour
                     collider.gameObject.name = "Map tile walk path";
 
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
-                    Debug.Log("@INIT POSITION OF PATHFINDER");
+                    //Debug.Log("@INIT POSITION OF PATHFINDER");
                     onComplete?.Invoke();
                     InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, pathFinderMoveSpeed); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
@@ -296,7 +296,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     GameObject tempCheckpoint = GameObject.Find("Checkpoint temp");
                     Destroy(tempCheckpoint);
-                    Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
+                    //Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
                     isFirstCheckpointReached = true;
                     CancelInvoke();
                     Invoke("CheckpointReachedCustomWaitTime", 0.2f);
@@ -318,7 +318,7 @@ public class GenerateMap : MonoBehaviour
 
     private void CheckpointReachedCustomWaitTime()
     {
-        Debug.Log("@Continue path creation after checkpoint..");
+        //Debug.Log("@Continue path creation after checkpoint..");
         InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, pathFinderMoveSpeed);
     }
 
@@ -332,22 +332,15 @@ public class GenerateMap : MonoBehaviour
     // called within CreateMapSequentially() function sequence
     private (int, int, int) GenerateEntranceAndExitAndCheckpoints_MapTileNumbers(Action onComplete)
     {
+        // Setup initial random tile numbers
         int pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
 
         int pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
-        // TEMP FIX
-        // Create a way to put the checkpoint in the middle of the map (specified tiles) 
-        // Issue with applying the random number to the correct tile..
-        var specificCheckPointNums = new[] { 45, 46, 56, 56 };
-        System.Random rd = new System.Random();
-        int random = rd.Next(specificCheckPointNums.Length);
-        int createRandomCheckpointNum = specificCheckPointNums[random];
-        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
-
-        var negatedEntranceMapTileNumbers = new[] { 1, 10, 91, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
+        // ENTRANCE -->
+        var negatedEntranceMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
             exitMapTileNumber - 9, entranceMapTileNumber = exitMapTileNumber };
 
         if (negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber)
@@ -364,9 +357,9 @@ public class GenerateMap : MonoBehaviour
                 }
             }
         }
-
         entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
 
+        // EXIT -->
         var negatedExitMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
             entranceMapTileNumber - 9, exitMapTileNumber = entranceMapTileNumber };
 
@@ -384,30 +377,19 @@ public class GenerateMap : MonoBehaviour
                 }
             }
         }
-
         exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
-        //var negatedCheckpointMapTileNumbers = new[] {entranceMapTileNumber - 1, entranceMapTileNumber + 1, entranceMapTileNumber - 10, entranceMapTileNumber + 10,
-        //exitMapTileNumber - 1, exitMapTileNumber + 1, exitMapTileNumber - 10, exitMapTileNumber + 10};
+        // CHECKPOINT -->
+        /// TEMP FIX
+        /// Create a way to put the checkpoint in the middle of the map (specified tiles) 
+        /// Issue with applying the random number to the correct tile..
+        var specificCheckPointNums = new[] { 45, 46, 56, 56 };
+        System.Random rd = new System.Random();
+        int random = rd.Next(specificCheckPointNums.Length);
+        int createRandomCheckpointNum = specificCheckPointNums[random];
+        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
 
-        //// randomize checkpoint tile if the checkpoint tile is within -1 OR +1 of entrance title
-        //if (negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
-        //{
-        //    createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-        //    Debug.Log($"randomize checkpoint tile.. {checkpointMapTileNumber}...");
-        //    while (negatedCheckpointMapTileNumbers.Contains(groundMapTileList[createRandomCheckpointNum]))
-        //    {
-        //        createRandomCheckpointNum = Random.Range(12, groundMapTileList.Count);
-        //        Debug.Log($"randomize checkpoint tile AGAIN!.. {checkpointMapTileNumber}...");
-        //        if (!negatedCheckpointMapTileNumbers.Contains(checkpointMapTileNumber))
-        //        {
-        //            break;
-        //        }
-        //    }
-        //}
-
-        //checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum];
-
+        // return correct tile numbers && complete Invoke()
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
         onComplete.Invoke();
         return (entranceMapTileNumber, exitMapTileNumber, checkpointMapTileNumber);
@@ -524,7 +506,7 @@ public class GenerateMap : MonoBehaviour
             {
                 isPathFinderInitialSpawnCompleted = true;
                 PathFinderMapTileGO.transform.rotation = Quaternion.Euler(rotation);
-                Debug.Log("initial rotation = " + debug + "Rotation: " + rotation);
+                Debug.Log($"Pathfinder set dir:{debug}.. Raw rot:{rotation}..");
             }
         }
     }
@@ -535,7 +517,7 @@ public class GenerateMap : MonoBehaviour
         if (_hit.collider.name.ToLower().Contains("exit") || _hit.collider.name.ToLower().Contains("checkpoint"))
         {
             isExitOrCheckpointInSightForPathFinder = true;
-            Debug.Log($"isExitOrCheckpointInSightForPathFinder: {isExitOrCheckpointInSightForPathFinder}.. @isFirstCheckpointReached: {isFirstCheckpointReached}..");
+            //Debug.Log($"isExitOrCheckpointInSightForPathFinder: {isExitOrCheckpointInSightForPathFinder}.. @isFirstCheckpointReached: {isFirstCheckpointReached}..");
         }
         else
         {
