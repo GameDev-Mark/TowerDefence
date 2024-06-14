@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -39,6 +40,7 @@ public class GenerateMap : MonoBehaviour
     private bool isPathFinderInitialSpawnCompleted = false;
     private bool isFirstCheckpointReached = false;
     private bool isExitOrCheckpointInSightForPathFinder = false;
+    private bool isBridgeCreated = false;
 
     private void Start()
     {
@@ -313,7 +315,94 @@ public class GenerateMap : MonoBehaviour
         }
 
         MovePathFinderMapTileGO();
+
+        // make initial collider contact with overlap path
+        Collider[] pathCollidersOther = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
+        foreach (Collider collider in pathCollidersOther)
+        {
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
+            {
+                if (!isBridgeCreated)
+                {
+                    // go up by 45 degrees 1 block .. level out back to 0 degrees 1 block .. do down -45 degrees 1 block .. level out back to 0 degrees as normal
+                    GenerateMapTileMaterial(collider.gameObject, "BlackRock");
+                    StartCoroutine(CreateBridge());
+                    CancelInvoke();
+                    Debug.Log($"pathfinder colliding with (WALK path).. NAME: {collider.name}..");
+                    return;
+                }
+            }
+        }
+
         return;
+    }
+
+    private IEnumerator CreateBridge()
+    {
+        GameObject bPositionForPathFinder = new GameObject(); // temp gameobject .. destroy pathfinder reaches it.
+        bPositionForPathFinder.name = "Position B";
+        bPositionForPathFinder.transform.position = PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward * 2f;
+
+        float slerpMove = 0; // initial "time stamp"
+        float slerpTime = 0.1f; // increase this variable to speed up the bridge arc movement
+
+        //find center between 'a' and 'b' .. this allows the gameobject to arc between positions
+        Vector3 center = (PathFinderMapTileGO.transform.position + bPositionForPathFinder.transform.position) * 0.5f;
+        center -= new Vector3(0, 1, 0);
+        Vector3 pathFinderReletiveCenter = PathFinderMapTileGO.transform.position - center;
+        Vector3 bPositionReletiveCenter = bPositionForPathFinder.transform.position - center;
+
+        // create X amount of waypoints to spawned when creating the bridge (arc)
+        float[] wayPointTimes = new float[10];
+        for (int i = 0; i < wayPointTimes.Length; i++)
+        {
+            wayPointTimes[i] = slerpTime * i * 8;
+        }
+        int wayPointIndex = 0;
+
+        while (slerpMove < slerpTime)
+        {
+            if (wayPointIndex < wayPointTimes.Length && slerpMove >= wayPointTimes[wayPointIndex] / 100f)
+            {
+                CreateWaypoint();
+                //Debug.Log($"Create way point.. wayPointIndex: {wayPointIndex} + slerpMove: {slerpMove}");
+                if (wayPointIndex == 0 || wayPointIndex == (wayPointTimes.Length / 2) + 1)
+                {
+                    GenerateBridgeTiles();
+                }
+                wayPointIndex++;
+            }
+
+            slerpMove += Time.deltaTime;
+            float perc = Mathf.Clamp01(slerpMove / slerpTime);
+            PathFinderMapTileGO.transform.position = Vector3.Slerp(pathFinderReletiveCenter, bPositionReletiveCenter, perc);
+            PathFinderMapTileGO.transform.position += center;
+
+            yield return new WaitForSeconds(slerpMove);
+        }
+
+        // after the pathfinder reaches its next position
+        yield return null;
+        Destroy(bPositionForPathFinder);
+        isBridgeCreated = true;
+        Invoke("CheckpointReachedCustomWaitTime", 0.1f);
+        GenerateBridgeTiles();
+    }
+
+    private void GenerateBridgeTiles()
+    {
+        GameObject bridgeTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        bridgeTileGO.transform.position = new Vector3
+            (Mathf.Round(PathFinderMapTileGO.transform.position.x), PathFinderMapTileGO.transform.position.y, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+        bridgeTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        bridgeTileGO.name = "Bridge tile";
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        if (Application.isPlaying)
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
     }
 
     private void CheckpointReachedCustomWaitTime()
@@ -429,7 +518,7 @@ public class GenerateMap : MonoBehaviour
         GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
         waypoint.name = "Waypoint_" + waypointCounter;
         waypoint.transform.localScale = Vector3.one * 0.25f;
-        waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, 0.75f, PathFinderMapTileGO.transform.position.z);
+        waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, PathFinderMapTileGO.transform.position.y, PathFinderMapTileGO.transform.position.z);
         GenerateMapTileMaterial(waypoint, "PathFinder");
         waypointsList.Add(waypoint);
     }
