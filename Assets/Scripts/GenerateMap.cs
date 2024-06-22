@@ -326,15 +326,7 @@ public class GenerateMap : MonoBehaviour
             {
                 if (!isBridgeCreated)
                 {
-                    if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
-                        CreateWaypoint(0f, 0f, -1f);
-                    else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
-                        CreateWaypoint(0f, 0f, 1f);
-                    else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
-                        CreateWaypoint(-1f, 0f, 0f);
-                    else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
-                        CreateWaypoint(1f, 0f, 0f);
-
+                    CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
                     StartCoroutine(CreateBridge());
                     CancelInvoke();
                     //Debug.Log($"pathfinder colliding with (WALK path).. NAME: {collider.name}..");
@@ -397,6 +389,8 @@ public class GenerateMap : MonoBehaviour
         GenerateBridgeTiles();
         isBridgeCreated = true;
         Invoke("CheckpointReachedCustomWaitTime", 0.1f);
+        CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(-1f, 0f, -1f);
+        Debug.Log($"Waypoint number : {waypointCounter}");
     }
 
     private int bridgeCount = 0;
@@ -587,6 +581,19 @@ public class GenerateMap : MonoBehaviour
             PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
         GenerateMapTileMaterial(waypoint, "PathFinder");
         waypointsList.Add(waypoint);
+    }
+
+    private void CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder
+        (float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default)
+    {
+        if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            CreateWaypoint(0f, optionalOffsetY, -optionalOffsetZ);
+        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            CreateWaypoint(0f, optionalOffsetY, optionalOffsetZ);
+        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            CreateWaypoint(-optionalOffsetX, optionalOffsetY, 0f);
+        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            CreateWaypoint(optionalOffsetX, optionalOffsetY, 0f);
     }
 
     #region Path finder physics updater
