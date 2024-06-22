@@ -43,6 +43,7 @@ public class GenerateMap : MonoBehaviour
     private bool isFirstCheckpointReached = false;
     private bool isExitOrCheckpointInSightForPathFinder = false;
     private bool isBridgeCreated = false;
+    private bool isBridgeCurrentlyBeingCreated = false;
 
     private void Start()
     {
@@ -329,6 +330,7 @@ public class GenerateMap : MonoBehaviour
                     CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
                     StartCoroutine(CreateBridge());
                     CancelInvoke();
+                    isBridgeCurrentlyBeingCreated = true;
                     //Debug.Log($"pathfinder colliding with (WALK path).. NAME: {collider.name}..");
                     return;
                 }
@@ -390,7 +392,7 @@ public class GenerateMap : MonoBehaviour
         isBridgeCreated = true;
         Invoke("CheckpointReachedCustomWaitTime", 0.1f);
         CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(-1f, 0f, -1f);
-        Debug.Log($"Waypoint number : {waypointCounter}");
+        isBridgeCurrentlyBeingCreated = false;
     }
 
     private int bridgeCount = 0;
@@ -690,7 +692,7 @@ public class GenerateMap : MonoBehaviour
         if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
         {
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            CreateWaypoint();
+            if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
             Debug.Log($"Exit is in sight: {log}");
         }
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
@@ -713,13 +715,13 @@ public class GenerateMap : MonoBehaviour
                 if (ReturnRayCastDirectionLeftOrRight() == "right")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
-                    CreateWaypoint();
+                    if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
                     Debug.Log("Rotate right .. collision to edge...");
                 }
                 else if (ReturnRayCastDirectionLeftOrRight() == "left")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
-                    CreateWaypoint();
+                    if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
                     Debug.Log("Rotate left .. collision to edge...");
                 }
             }
