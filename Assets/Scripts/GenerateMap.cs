@@ -399,7 +399,6 @@ public class GenerateMap : MonoBehaviour
     private void GenerateBridgeTiles()
     {
         GameObject bridgeTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        bridgeTileGO.name = "Bridge tile";
 
         string pathFinderYAxisDecimalPlace = PathFinderMapTileGO.transform.position.y.ToString("F2"); // decimal place 1.4
         float.TryParse(pathFinderYAxisDecimalPlace, out float yResult);
@@ -457,6 +456,7 @@ public class GenerateMap : MonoBehaviour
             }
         }
         bridgeCount++;
+        bridgeTileGO.name = $"Bridge tile_{bridgeCount}";
     }
 
     void OnDrawGizmos()
