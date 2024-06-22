@@ -9,16 +9,16 @@ public class GenerateMap : MonoBehaviour
 {
     private int xTileMap;
     private int yTileMap;
-    private int entranceMapTileNumber;
-    private int exitMapTileNumber;
-    private int checkpointMapTileNumber;
+    private int entranceMapTileNumber = 30; // remove these numbers to randomize the tiles
+    private int exitMapTileNumber = 97;
+    private int checkpointMapTileNumber = 86;
     private int waypointCounter;
 
     private List<int> tileList;
     private List<int> edgeOfMapTileList;
     private List<int> groundMapTileList;
 
-    [SerializeField] public List<GameObject> waypointsList;
+    [Space(20), SerializeField] public List<GameObject> waypointsList;
 
     private float distanceFromPathFinderToRightSideEdge;
     private float distanceFromPathFinderToLeftSideEdge;
@@ -29,7 +29,7 @@ public class GenerateMap : MonoBehaviour
     private pathFinderForwardDirectionToGlobal pathFinderForwardDir;
 
     private GameObject mapTileGO;
-    [SerializeField] public GameObject entranceMapTileGO;
+    [Space(20), SerializeField] public GameObject entranceMapTileGO;
     [SerializeField] private GameObject exitMapTileGO;
     private GameObject edgeMapTileGO;
     private GameObject PathFinderMapTileGO;
@@ -406,7 +406,7 @@ public class GenerateMap : MonoBehaviour
         bridgeTileGO.transform.position = new Vector3
             (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult, Mathf.Round(PathFinderMapTileGO.transform.position.z));
 
-        bridgeTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+        bridgeTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f); // middle bridge tile base
 
         if (bridgeCount != 1)
             bridgeTileGO.transform.localScale = new Vector3(1f, 1.3f, 1f);
@@ -482,62 +482,72 @@ public class GenerateMap : MonoBehaviour
     // called within CreateMapSequentially() function sequence
     private (int, int, int) GenerateEntranceAndExitAndCheckpoints_MapTileNumbers(Action onComplete)
     {
-        // Setup initial random tile numbers
-        int pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-        entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
+        if (entranceMapTileNumber == 0)
+        {
+            // Setup initial random tile number
+            int pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+            entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
 
-        int pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-        exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
-
-        // ENTRANCE -->
-        var negatedEntranceMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
+            // ENTRANCE -->
+            var negatedEntranceMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, exitMapTileNumber + 90, exitMapTileNumber + 9, exitMapTileNumber - 90,
             exitMapTileNumber - 9, exitMapTileNumber + 10, exitMapTileNumber - 10, exitMapTileNumber - 1, exitMapTileNumber + 1, entranceMapTileNumber = exitMapTileNumber };
 
-        if (negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber)
-            || negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber) && negatedEntranceMapTileNumbers.Contains(exitMapTileNumber))
-        {
-            pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-            //Debug.Log("Need to randomize entrance tile number again.. " + entranceMapTileNumber);
-            while (negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]) || pickEntranceRandomNumInList == pickExitRandomNumInList)
+            if (negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber)
+                || negatedEntranceMapTileNumbers.Contains(entranceMapTileNumber) && negatedEntranceMapTileNumbers.Contains(exitMapTileNumber))
             {
                 pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-                if (!negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+                //Debug.Log("Need to randomize entrance tile number again.. " + entranceMapTileNumber);
+                while (negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList])/* || pickEntranceRandomNumInList == pickExitRandomNumInList*/)
                 {
-                    break;
+                    pickEntranceRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+                    if (!negatedEntranceMapTileNumbers.Contains(edgeOfMapTileList[pickEntranceRandomNumInList]))
+                    {
+                        break;
+                    }
                 }
             }
+            entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
         }
-        entranceMapTileNumber = edgeOfMapTileList[pickEntranceRandomNumInList];
 
-        // EXIT -->
-        var negatedExitMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
+        if (exitMapTileNumber == 0)
+        {
+            // Setup initial random tile number
+            int pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+            exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
+
+            // EXIT -->
+            var negatedExitMapTileNumbers = new[] { 1, 2, 9, 10, 11, 20, 81, 90, 91, 92, 99, 100, entranceMapTileNumber + 90, entranceMapTileNumber + 9, entranceMapTileNumber - 90,
             entranceMapTileNumber - 9, entranceMapTileNumber + 10, entranceMapTileNumber - 10, entranceMapTileNumber - 1, entranceMapTileNumber + 1, exitMapTileNumber = entranceMapTileNumber };
 
-        if (negatedExitMapTileNumbers.Contains(exitMapTileNumber)
-            || negatedExitMapTileNumbers.Contains(exitMapTileNumber) && negatedExitMapTileNumbers.Contains(entranceMapTileNumber))
-        {
-            pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-            //Debug.Log("Need to randomize exit tile number again.. " + exitMapTileNumber);
-            while (negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]) || pickExitRandomNumInList == pickEntranceRandomNumInList)
+            if (negatedExitMapTileNumbers.Contains(exitMapTileNumber)
+                || negatedExitMapTileNumbers.Contains(exitMapTileNumber) && negatedExitMapTileNumbers.Contains(entranceMapTileNumber))
             {
                 pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
-                if (!negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+                //Debug.Log("Need to randomize exit tile number again.. " + exitMapTileNumber);
+                while (negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList])/* || pickExitRandomNumInList == pickEntranceRandomNumInList*/)
                 {
-                    break;
+                    pickExitRandomNumInList = Random.Range(1, edgeOfMapTileList.Count);
+                    if (!negatedExitMapTileNumbers.Contains(edgeOfMapTileList[pickExitRandomNumInList]))
+                    {
+                        break;
+                    }
                 }
             }
+            exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
         }
-        exitMapTileNumber = edgeOfMapTileList[pickExitRandomNumInList];
 
-        // CHECKPOINT -->
-        /// TEMP FIX
-        /// Create a way to put the checkpoint in the middle of the map (specified tiles) 
-        /// Issue with applying the random number to the correct tile..
-        var specificCheckPointNums = new[] { 45, 46, 56, 56 };
-        System.Random rd = new System.Random();
-        int random = rd.Next(specificCheckPointNums.Length);
-        int createRandomCheckpointNum = specificCheckPointNums[random];
-        checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
+        if (checkpointMapTileNumber == 0)
+        {
+            // CHECKPOINT -->
+            /// TEMP FIX
+            /// Create a way to put the checkpoint in the middle of the map (specified tiles) 
+            /// Issue with applying the random number to the correct tile..
+            var specificCheckPointNums = new[] { 45, 46, 56, 56 };
+            System.Random rd = new System.Random();
+            int random = rd.Next(specificCheckPointNums.Length);
+            int createRandomCheckpointNum = specificCheckPointNums[random];
+            checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
+        }
 
         // return correct tile numbers && complete Invoke()
         Debug.Log($"Entrance number: {entranceMapTileNumber} && Exit number: {exitMapTileNumber} && Checkpoint number: {checkpointMapTileNumber}");
