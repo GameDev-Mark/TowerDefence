@@ -9,9 +9,18 @@ public class GenerateMap : MonoBehaviour
 {
     private int xTileMap;
     private int yTileMap;
-    private int entranceMapTileNumber = 30; // remove these numbers to randomize the tiles
-    private int exitMapTileNumber = 97;
-    private int checkpointMapTileNumber = 86;
+    /// Testing purposes : first bridge tile -->
+    // entranceMapTileNumber = 30, exitMapTileNumber = 97, checkpointMapTileNumber = 86 --> rotating from the forward dir .. rotate right
+    // entranceMapTileNumber = 80, exitMapTileNumber = 7, checkpointMapTileNumber = 16 --> rotating from the forward dir .. rotate left
+    // entranceMapTileNumber = 98, exitMapTileNumber = 61, checkpointMapTileNumber = 29 --> rotating from the right dir .. rotate down
+    // entranceMapTileNumber = 8, exitMapTileNumber = 21, checkpointMapTileNumber = 47 --> rotating from the left dir .. rotate down
+    // entranceMapTileNumber = 93, exitMapTileNumber = 70, checkpointMapTileNumber = 22 --> rotating from the right dir .. rotate forward
+    // entranceMapTileNumber = 3, exitMapTileNumber = 30, checkpointMapTileNumber = 72 --> rotating from the left dir .. rotate forward
+    /// Testing purposes : Last bridge tile -->
+    // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44
+    private int entranceMapTileNumber = 97; // remove these numbers to randomize the tiles
+    private int exitMapTileNumber = 8;
+    private int checkpointMapTileNumber = 44;
     private int waypointCounter;
 
     private List<int> tileList;
@@ -26,7 +35,8 @@ public class GenerateMap : MonoBehaviour
 
     private string rayCastDirectionLeftOrRight;
     private enum pathFinderForwardDirectionToGlobal { Forward, Down, Right, Left };
-    private pathFinderForwardDirectionToGlobal pathFinderForwardDir;
+    private pathFinderForwardDirectionToGlobal currentPathFinderForwardDir;
+    private pathFinderForwardDirectionToGlobal preExitPathFinderForwardDir;
 
     private GameObject mapTileGO;
     [Space(20), SerializeField] public GameObject entranceMapTileGO;
@@ -44,6 +54,7 @@ public class GenerateMap : MonoBehaviour
     private bool isExitOrCheckpointInSightForPathFinder = false;
     private bool isBridgeCreated = false;
     private bool isBridgeCurrentlyBeingCreated = false;
+    private bool isPathfinderRotatingToExit = false;
 
     private void Start()
     {
@@ -308,71 +319,105 @@ public class GenerateMap : MonoBehaviour
                     return;
                 }
             }
-            else if (collider.name.ToLower().Contains("exit") || collider.name.ToLower().Contains("edge"))
+            else if (collider.name.ToLower().Contains("exit temp") || collider.name.ToLower().Contains("edge"))
             {
                 Debug.Log("END OF THE LINE.. Colliding with: " + collider.gameObject.name);
                 CancelInvoke();
-                CreateWaypoint();
+                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f); // spawn waypoint 1 tile before exit
+                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(); // spawn waypoint at exit tile
                 return;
             }
         }
 
         MovePathFinderMapTileGO();
 
-        // make initial collider contact with overlap path
-        Collider[] pathCollidersOther = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
-        foreach (Collider collider in pathCollidersOther)
+        // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly 
+        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
         {
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathfinderRotatingToExit)
             {
                 if (!isBridgeCreated)
                 {
-                    CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
-                    StartCoroutine(CreateBridge());
-                    CancelInvoke();
                     isBridgeCurrentlyBeingCreated = true;
-                    //Debug.Log($"pathfinder colliding with (WALK path).. NAME: {collider.name}..");
+                    OffsetTheExitTurnWaypoint(); // offset waypoint position
+                    StartCoroutine(CreateBridge(-PathFinderMapTileGO.transform.forward, 1.5f, 0f, 1f));
+                    isPathfinderRotatingToExit = false;
+                    CancelInvoke();
                     return;
                 }
             }
         }
 
+        // make initial collider contact with overlap path
+        Collider[] OverlapWithPathCollidersInFront = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
+        foreach (Collider collider in OverlapWithPathCollidersInFront)
+        {
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
+            {
+                if (!isBridgeCreated)
+                {
+                    isBridgeCurrentlyBeingCreated = true;
+                    CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
+                    StartCoroutine(CreateBridge(Vector3.zero, 1.5f, 1.5f, 1f));
+                    CancelInvoke();
+                    return;
+                }
+            }
+        }
         return;
     }
 
-    private IEnumerator CreateBridge()
+    // called from ContinueMapWalkPathCreation() function
+    // Creates a bridge like slerp motion that spawns waypoints from 'a' to 'b' position (3 tiles - up, across, down)
+    private IEnumerator CreateBridge(Vector3 optionalOffsetForAPos = default,
+        float optionalOffsetForFirstWaypointSpawnYAxis = default, float optionalOffsetForLastWaypointSpawnYAxis = default, float optionalOffsetAddOntoCenterCurveSlerp = default)
     {
-        GameObject bPositionForPathFinder = new GameObject(); // temp gameobject .. destroy pathfinder reaches it.
-        bPositionForPathFinder.name = "Position B";
-        bPositionForPathFinder.transform.position = PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward * 2f;
+        Vector3 positionA = PathFinderMapTileGO.transform.position + optionalOffsetForAPos; // initialize position A of the slerp
+        if (optionalOffsetForFirstWaypointSpawnYAxis != default)
+            positionA.y = optionalOffsetForFirstWaypointSpawnYAxis;
+
+        GameObject positionB = new GameObject(); // initialize position B for slerp.. temp gameobject.. destroy positionB gameobject when pathfinder reaches its destination.
+        positionB.name = "Position B";
+        Vector3 postionB = PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward * 2f;
+        if (optionalOffsetForLastWaypointSpawnYAxis != default)
+            postionB.y = optionalOffsetForLastWaypointSpawnYAxis;
+        positionB.transform.position = postionB;
 
         float slerpMove = 0; // initial "time stamp"
         float slerpTime = 0.1f; // increase this variable to speed up the bridge arc movement
 
         //find center between 'a' and 'b' .. this allows the gameobject to arc between positions
-        Vector3 center = (PathFinderMapTileGO.transform.position + bPositionForPathFinder.transform.position) * 0.5f;
-        center -= new Vector3(0, 1, 0);
-        Vector3 pathFinderReletiveCenter = PathFinderMapTileGO.transform.position - center;
-        Vector3 bPositionReletiveCenter = bPositionForPathFinder.transform.position - center;
+        Vector3 center = (positionA + postionB) * 0.5f;
+        center -= new Vector3(0, 1f + optionalOffsetAddOntoCenterCurveSlerp, 0);
+        Vector3 pathFinderReletiveCenter = positionA - center;
+        Vector3 bPositionReletiveCenter = postionB - center;
 
         // create X amount of waypoints to spawned when creating the bridge (arc)
-        float[] wayPointTimes = new float[10];
+        float[] wayPointTimes = new float[5];
         for (int i = 0; i < wayPointTimes.Length; i++)
         {
-            wayPointTimes[i] = slerpTime * i * 8;
+            wayPointTimes[i] = slerpTime * i * 0.1f;
         }
         int wayPointIndex = 0;
 
         while (slerpMove < slerpTime)
         {
-            if (wayPointIndex < wayPointTimes.Length && slerpMove >= wayPointTimes[wayPointIndex] / 100f)
+            if (wayPointIndex < wayPointTimes.Length && slerpMove >= wayPointTimes[wayPointIndex])
             {
-                CreateWaypoint(0f, 0.5f, 0f);
-                //Debug.Log($"Create way point.. wayPointIndex: {wayPointIndex} + slerpMove: {slerpMove}");
-                if (wayPointIndex == 0 || wayPointIndex == (wayPointTimes.Length / 2) + 1)
+                if (wayPointIndex == 0)
                 {
-                    GenerateBridgeTiles();
+                    if (optionalOffsetForAPos != default)
+                        GenerateBridgeTiles(1f, 0f, 1f); // first bridge tile
+                    else
+                        GenerateBridgeTiles(0f, 0f, 0f);
                 }
+                if (wayPointIndex == (wayPointTimes.Length / 2) + 1)
+                {
+                    GenerateBridgeTiles(); // middle bridge tile 
+                }
+
                 wayPointIndex++;
             }
 
@@ -381,94 +426,169 @@ public class GenerateMap : MonoBehaviour
             PathFinderMapTileGO.transform.position = Vector3.Slerp(pathFinderReletiveCenter, bPositionReletiveCenter, perc);
             PathFinderMapTileGO.transform.position += center;
 
+            CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
+
             yield return new WaitForSeconds(slerpMove);
         }
 
         // after the pathfinder reaches its next position
         yield return null;
-        Destroy(bPositionForPathFinder);
-        CreateWaypoint(0f, 0.5f, 0f);
-        GenerateBridgeTiles();
+        if (PathFinderMapTileGO.transform.position != new Vector3(PathFinderMapTileGO.transform.position.x, 1f, PathFinderMapTileGO.transform.position.z))
+            PathFinderMapTileGO.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, 1f, PathFinderMapTileGO.transform.position.z);
+        yield return new WaitForEndOfFrame();
+        Destroy(positionB);
+        if (optionalOffsetForAPos != default)
+            GenerateBridgeTiles(1f, 0f, 1f); // last bridge tile
+        else
+            GenerateBridgeTiles();
         isBridgeCreated = true;
         Invoke("CheckpointReachedCustomWaitTime", 0.1f);
         CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(-1f, 0f, -1f);
         isBridgeCurrentlyBeingCreated = false;
     }
 
-    private int bridgeCount = 0;
-    private void GenerateBridgeTiles()
+    // _local bridge counter to keep track of the bridge tile amount
+    // Called from the CreateBridge() function.. spawns bridge tiles based on the position of the pathfinder
+    private int _localBridgeCount = 0;
+    private void GenerateBridgeTiles(float offsetPosX = default, float offsetPosY = default, float offsetPosZ = default)
     {
         GameObject bridgeTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
 
         string pathFinderYAxisDecimalPlace = PathFinderMapTileGO.transform.position.y.ToString("F2"); // decimal place 1.4
-        float.TryParse(pathFinderYAxisDecimalPlace, out float yResult);
+        float.TryParse(pathFinderYAxisDecimalPlace, out float yResult); // PathFinderMapTileGO posistion Y axis 
 
         bridgeTileGO.transform.position = new Vector3
-            (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+        (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult, Mathf.Round(PathFinderMapTileGO.transform.position.z)); // initial position catch
 
-        bridgeTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f); // middle bridge tile base
-
-        if (bridgeCount != 1)
-            bridgeTileGO.transform.localScale = new Vector3(1f, 1.3f, 1f);
-
-        if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        if (_localBridgeCount == 1) // middle bridge tile
         {
-            if (bridgeCount == 0)
+            bridgeTileGO.transform.position = new Vector3
+           (Mathf.Round(PathFinderMapTileGO.transform.position.x), 1.4f, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+            bridgeTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f); // middle bridge tile base
+        }
+
+        if (_localBridgeCount != 1) bridgeTileGO.transform.localScale = new Vector3(1f, 1.3f, 1f); // middle bridge tile
+
+        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        {
+            if (_localBridgeCount == 0)
             {
-                bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
+                if (offsetPosZ != default && preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
+                }
+                else if (offsetPosZ != default && preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
+                }
+                else
+                {
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
+                }
             }
-            if (bridgeCount == 2)
+            if (_localBridgeCount == 2)
             {
+                if (offsetPosZ != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
+                }
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 180f, 0f);
             }
         }
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
         {
-            if (bridgeCount == 0)
+            if (_localBridgeCount == 0)
             {
-                bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 180f, 0f);
+                if (offsetPosZ != default && preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
+                }
+                else if (offsetPosZ != default && preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
+                }
+                else
+                {
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 180f, 0f);
+                }
             }
-            if (bridgeCount == 2)
+            if (_localBridgeCount == 2)
             {
+                if (offsetPosZ != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
+                }
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             }
         }
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
         {
-            if (bridgeCount == 0)
+            if (_localBridgeCount == 0)
             {
-                bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
+                if (offsetPosX != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x + -offsetPosX), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
+                }
+                else
+                {
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
+                }
             }
-            if (bridgeCount == 2)
+            if (_localBridgeCount == 2)
             {
+                if (offsetPosX != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x + -offsetPosX), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+                }
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
             }
         }
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
         {
-            if (bridgeCount == 0)
+            if (_localBridgeCount == 0)
             {
-                bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
+                if (offsetPosX != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x + offsetPosX), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
+                }
+                else
+                {
+                    bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
+                }
             }
-            if (bridgeCount == 2)
+            if (_localBridgeCount == 2)
             {
+                if (offsetPosX != default)
+                {
+                    bridgeTileGO.transform.position = new Vector3
+                    (Mathf.Round(PathFinderMapTileGO.transform.position.x + offsetPosX), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z));
+                }
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
             }
         }
-        bridgeCount++;
-        bridgeTileGO.name = $"Bridge tile_{bridgeCount}";
+        _localBridgeCount++;
+        bridgeTileGO.name = $"Bridge tile_{_localBridgeCount}";
     }
 
-    void OnDrawGizmos()
-    {
-        Gizmos.color = Color.red;
-        if (Application.isPlaying)
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
-    }
-
+    // invoked from ContinueMapWalkPathCreation() && IEnumerator CreateBridge() functions
+    // Custom wait time - this is called after an invoke has been canceled.. to resume creation of the path
     private void CheckpointReachedCustomWaitTime()
     {
-        //Debug.Log("@Continue path creation after checkpoint..");
         InvokeRepeating("ContinueMapWalkPathCreation", 0.2f, pathFinderMoveSpeed);
     }
 
@@ -578,34 +698,72 @@ public class GenerateMap : MonoBehaviour
         PathFinderMapTileGO.AddComponent<BoxCollider>();
         PathFinderMapTileGO.transform.localScale = Vector3.one * 0.5f;
         GenerateMapTileMaterial(PathFinderMapTileGO, "PathFinder");
-        pathFinderMoveSpeed = 0.25f;
+        pathFinderMoveSpeed = 0.15f;
     }
 
     // this function is called whenever the pathfinder rotates and turns a different direction
     // this will allow waypoints to be created so as the characters will be able to follow these waypoints accordingaly along the path
-    private void CreateWaypoint(float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default)
+    private void CreateWaypoint(float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default, Transform moveableWaypoint = default)
     {
-        waypointCounter++;
-        GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        waypoint.name = "Waypoint_" + waypointCounter;
-        waypoint.transform.localScale = Vector3.one * 0.25f;
-        waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
-            PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
-        GenerateMapTileMaterial(waypoint, "PathFinder");
-        waypointsList.Add(waypoint);
+        if (moveableWaypoint == default)
+        {
+            waypointCounter++;
+            GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+            waypoint.name = "Waypoint_" + waypointCounter;
+            waypoint.transform.localScale = Vector3.one * 0.25f;
+            waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
+                PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
+            waypoint.transform.rotation = PathFinderMapTileGO.transform.rotation;
+            GenerateMapTileMaterial(waypoint, "PathFinder");
+            waypointsList.Add(waypoint);
+        }
+        else // if you want to move a waypoint that has already been created
+        {
+            moveableWaypoint.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
+                PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
+        }
     }
 
+    // This function calls CreateWaypoint() after it offsets the waypoints accordingly
     private void CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder
-        (float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default)
+        (float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default, Transform moveableWaypoint = default)
     {
-        if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
-            CreateWaypoint(0f, optionalOffsetY, -optionalOffsetZ);
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
-            CreateWaypoint(0f, optionalOffsetY, optionalOffsetZ);
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
-            CreateWaypoint(-optionalOffsetX, optionalOffsetY, 0f);
-        else if (pathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
-            CreateWaypoint(optionalOffsetX, optionalOffsetY, 0f);
+        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            CreateWaypoint(0f, optionalOffsetY, -optionalOffsetZ, moveableWaypoint);
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            CreateWaypoint(0f, optionalOffsetY, optionalOffsetZ, moveableWaypoint);
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            CreateWaypoint(-optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            CreateWaypoint(optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
+    }
+
+    // called from ContinueMapWalkPathCreation() .. only called when collider check is triggered from the 'right' or 'left' triggers when rotating towards exit
+    // checks for exitturn waypoint and positions the waypoint were should intend to be depending on the forward direction of the pathfinder
+    private void OffsetTheExitTurnWaypoint()
+    {
+        GameObject waypointExitTurn = waypointsList.Last();
+        if (waypointExitTurn.name.ToLower().Contains("exitturn"))
+        {
+            if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            {
+                if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right) // working
+                    CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
+                else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left) // working
+                    CreateWaypoint(1, 0f, -1f, waypointExitTurn.transform);
+            }
+            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            {
+                if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right) // working
+                    CreateWaypoint(-1, 0f, 1f, waypointExitTurn.transform);
+                else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left) // working
+                    CreateWaypoint(1, 0f, 1f, waypointExitTurn.transform);
+            }
+            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+                CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
+            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+                CreateWaypoint(1f, 0f, -1f, waypointExitTurn.transform);
+        }
     }
 
     #region Path finder physics updater
@@ -701,14 +859,19 @@ public class GenerateMap : MonoBehaviour
 
         if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
         {
-            PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
             Debug.Log($"Exit is in sight: {log}");
+            CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
+            isPathfinderRotatingToExit = true;
+            GameObject exitTurnWaypoint = waypointsList.Last(); // get the last waypoint and rename it so we can differentiate it
+            exitTurnWaypoint.name = $"Waypoint_ExitTurn_{waypointCounter}";
+            PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
+            preExitPathFinderForwardDir = currentPathFinderForwardDir;
         }
+
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
         {
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            CreateWaypoint();
+            CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
             Debug.Log($"Checkpoint is in sight: {log}");
         }
     }
@@ -725,13 +888,13 @@ public class GenerateMap : MonoBehaviour
                 if (ReturnRayCastDirectionLeftOrRight() == "right")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, 90f, 0f), Space.Self);
-                    if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
+                    if (!isBridgeCurrentlyBeingCreated) CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
                     Debug.Log("Rotate right .. collision to edge...");
                 }
                 else if (ReturnRayCastDirectionLeftOrRight() == "left")
                 {
                     PathFinderMapTileGO.transform.Rotate(new Vector3(0f, -90f, 0f), Space.Self);
-                    if (!isBridgeCurrentlyBeingCreated) CreateWaypoint();
+                    if (!isBridgeCurrentlyBeingCreated) CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
                     Debug.Log("Rotate left .. collision to edge...");
                 }
             }
@@ -787,21 +950,20 @@ public class GenerateMap : MonoBehaviour
         var rotation = Math.Round(forwardDir.eulerAngles.y);
         if (rotation == 0f) // forward
         {
-            pathFinderForwardDir = pathFinderForwardDirectionToGlobal.Forward;
+            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Forward;
         }
         else if (rotation == 180f || rotation == -180f)
         {
-            pathFinderForwardDir = pathFinderForwardDirectionToGlobal.Down;
+            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Down;
         }
         else if (rotation == 90f)
         {
-            pathFinderForwardDir = pathFinderForwardDirectionToGlobal.Right;
+            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Right;
         }
         else if (rotation == -90f || rotation == 270f)
         {
-            pathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
+            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
         }
-        //Debug.Log($"pathFinderForwardDirectionToGlobal: {pathFinderForwardDir}.. rotation: {rotation}");
     }
     #endregion
 
@@ -850,6 +1012,17 @@ public class GenerateMap : MonoBehaviour
         catch
         {
             Debug.Log($"There is no meshrenderer to disable on {_mr.name} gameobject");
+        }
+    }
+
+    void OnDrawGizmos()
+    {
+        Gizmos.color = Color.red;
+        if (Application.isPlaying)
+        {
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
         }
     }
 }
