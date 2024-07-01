@@ -301,7 +301,7 @@ public class GenerateMap : MonoBehaviour
 
         foreach (Collider collider in pathColliders)
         {
-            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject)
+            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
             {
                 GenerateMapTileMaterial(collider.gameObject, "GrassGround");
                 collider.name = "Map tile walk path";
@@ -444,6 +444,7 @@ public class GenerateMap : MonoBehaviour
         isBridgeCreated = true;
         Invoke("CheckpointReachedCustomWaitTime", 0.1f);
         CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(-1f, 0f, -1f);
+        yield return new WaitForSeconds(pathFinderMoveSpeed * 2f);
         isBridgeCurrentlyBeingCreated = false;
     }
 
