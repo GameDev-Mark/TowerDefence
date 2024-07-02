@@ -251,7 +251,7 @@ public class GenerateMap : MonoBehaviour
                     _checkpointInvis.transform.localScale = Vector3.one * 0.5f;
                     _checkpointInvis.transform.position = walkPathCheckpointMapTileGO.transform.position + Vector3.up * 0.5f;
 
-                    GenerateMapTileMaterial(mapTileGO, "GrassGround");
+                    GenerateMapTileMaterial(mapTileGO, "GroundTile_OffGreen_CobbleStone");
                     isMapWalkPathCheckpointsSpawned = true;
                 }
             }
@@ -277,7 +277,7 @@ public class GenerateMap : MonoBehaviour
 
                 if (collider.name.ToLower().Contains("ground") && dis == 1)
                 {
-                    GenerateMapTileMaterial(collider.gameObject, "GrassGround");
+                    GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                     collider.gameObject.name = "Map tile walk path";
 
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
@@ -303,7 +303,7 @@ public class GenerateMap : MonoBehaviour
         {
             if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
             {
-                GenerateMapTileMaterial(collider.gameObject, "GrassGround");
+                GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 collider.name = "Map tile walk path";
             }
             else if (collider.name.ToLower().Contains("checkpoint"))
@@ -454,6 +454,8 @@ public class GenerateMap : MonoBehaviour
     private void GenerateBridgeTiles(float offsetPosX = default, float offsetPosY = default, float offsetPosZ = default)
     {
         GameObject bridgeTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
+
+        GenerateMapTileMaterial(bridgeTileGO, "BridgeTile_CobbleStone");
 
         string pathFinderYAxisDecimalPlace = PathFinderMapTileGO.transform.position.y.ToString("F2"); // decimal place 1.4
         float.TryParse(pathFinderYAxisDecimalPlace, out float yResult); // PathFinderMapTileGO posistion Y axis 
