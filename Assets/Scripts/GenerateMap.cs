@@ -279,13 +279,126 @@ public class GenerateMap : MonoBehaviour
                 {
                     GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                     collider.gameObject.name = "Map tile walk path";
-
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
-                    //Debug.Log("@INIT POSITION OF PATHFINDER");
                     onComplete?.Invoke();
                     InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, pathFinderMoveSpeed); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
                 }
+            }
+        }
+    }
+
+    private void CreateMapTileWalls(GameObject _tile)
+    {
+        GameObject _wallOne = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        GameObject _wallTwo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        _wallOne.name = "WallOne";
+        _wallTwo.name = "WallTwo";
+
+        _wallOne.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
+        _wallTwo.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
+
+        _wallOne.transform.parent = _tile.transform;
+        _wallTwo.transform.parent = _tile.transform;
+
+        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        {
+            if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            {
+                _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            {
+                _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+                //Time.timeScale = 0f;
+            }
+            else
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+        }
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+        {
+            if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right) // done
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+        }
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+        {
+            if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            {
+                _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+            }
+        }
+        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+        {
+            if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (preExitPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            {
+                _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else
+            {
+                _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.up / 2;
+
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 90f, 0f);
             }
         }
     }
@@ -305,6 +418,7 @@ public class GenerateMap : MonoBehaviour
             {
                 GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 collider.name = "Map tile walk path";
+                CreateMapTileWalls(collider.gameObject);
             }
             else if (collider.name.ToLower().Contains("checkpoint"))
             {
@@ -314,6 +428,7 @@ public class GenerateMap : MonoBehaviour
                     Destroy(tempCheckpoint);
                     //Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
                     isFirstCheckpointReached = true;
+                    //CreateMapTileWalls(collider.gameObject); // FIX CHECKPOINT WALL TILES !
                     CancelInvoke();
                     Invoke("CheckpointReachedCustomWaitTime", 0.2f);
                     return;
@@ -830,6 +945,7 @@ public class GenerateMap : MonoBehaviour
 
         FindTheLongestDistanceBetweenLeftAndRightDirection();
         ReturnForwardDirectionPathFinderIsFacing();
+        PreviousPathFinderForwardDirection();
     }
 
     // called in PathFinderPhysics() to rotate the GO initially on spawn
@@ -868,7 +984,6 @@ public class GenerateMap : MonoBehaviour
             GameObject exitTurnWaypoint = waypointsList.Last(); // get the last waypoint and rename it so we can differentiate it
             exitTurnWaypoint.name = $"Waypoint_ExitTurn_{waypointCounter}";
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
-            preExitPathFinderForwardDir = currentPathFinderForwardDir;
         }
 
         if (_hit.collider.name.ToLower().Contains("checkpoint") && isPathFinderInitialSpawnCompleted && !isFirstCheckpointReached) // --> find first checkpoint
@@ -966,6 +1081,22 @@ public class GenerateMap : MonoBehaviour
         else if (rotation == -90f || rotation == 270f)
         {
             currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
+        }
+    }
+
+    // apply previous path finder gameobject position .. with a basic timer check every X seconds
+    float _timerAmount = 1f;
+    float _timerApplier = 0.1f;
+    private void PreviousPathFinderForwardDirection()
+    {
+        if (preExitPathFinderForwardDir != currentPathFinderForwardDir)
+        {
+            float _timer = _timerAmount -= _timerApplier;
+            if (_timer < 0f)
+            {
+                preExitPathFinderForwardDir = currentPathFinderForwardDir;
+                _timerAmount = 1f;
+            }
         }
     }
     #endregion
