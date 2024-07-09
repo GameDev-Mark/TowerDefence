@@ -296,6 +296,98 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
+    // InvokedRepeating on FindAndCreateMapWalkPath()
+    private void ContinueMapWalkPathCreation()
+    {
+        BoxCollider pathColl = PathFinderMapTileGO.GetComponent<BoxCollider>();
+        // Get the bounds of the collider
+        Bounds pathBounds = pathColl.bounds;
+        // Check for colliders within the bounds of the collider
+        Collider[] pathColliders = Physics.OverlapBox(pathBounds.center, pathBounds.extents);
+
+        foreach (Collider collider in pathColliders)
+        {
+            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            {
+                GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
+                collider.name = "Map tile walk path";
+                CreateMapTileWalls(collider.gameObject);
+            }
+            else if (collider.name.ToLower().Contains("checkpoint"))
+            {
+                if (!isFirstCheckpointReached)
+                {
+                    GameObject tempCheckpoint = GameObject.Find("Checkpoint temp");
+                    Destroy(tempCheckpoint);
+                    //Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
+                    isFirstCheckpointReached = true;
+                    CancelInvoke();
+                    Invoke("CheckpointReachedCustomWaitTime", 0.2f);
+                    return;
+                }
+
+                //Debug.Log($"currentPathFinderForwardDir: {currentPathFinderForwardDir}.. preExitPathFinderForwardDir : {preExitPathFinderForwardDir}");
+                //CreateMapTileWalls(collider.gameObject); // FIX CHECKPOINT WALL TILES !
+                //Time.timeScale = 0f;
+            }
+            else if (collider.name.ToLower().Contains("exit temp"))
+            {
+                Debug.Log("END OF THE LINE.. Colliding with: " + collider.gameObject.name);
+                GenerateAndCreateTowerTiles();
+                CancelInvoke();
+                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f); // spawn waypoint 1 tile before exit
+                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(); // spawn waypoint at exit tile
+                return;
+            }
+        }
+
+        MovePathFinderMapTileGO();
+
+        // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly 
+        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
+        {
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathfinderRotatingToExit)
+            {
+                if (!isBridgeCreated)
+                {
+                    isBridgeCurrentlyBeingCreated = true;
+                    OffsetTheExitTurnWaypoint(); // offset waypoint position
+                    StartCoroutine(CreateBridge(-PathFinderMapTileGO.transform.forward, 1.5f, 0f, 1f));
+                    isPathfinderRotatingToExit = false;
+                    CancelInvoke();
+                    return;
+                }
+            }
+        }
+
+        // make initial collider contact with overlap path
+        Collider[] OverlapWithPathCollidersInFront = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
+        foreach (Collider collider in OverlapWithPathCollidersInFront)
+        {
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
+            {
+                if (!isBridgeCreated)
+                {
+                    isBridgeCurrentlyBeingCreated = true;
+                    CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
+                    StartCoroutine(CreateBridge(Vector3.zero, 1.5f, 1.5f, 1f));
+                    CancelInvoke();
+                    return;
+                }
+            }
+        }
+        return;
+    }
+
+    // 
+    private void GenerateAndCreateTowerTiles()
+    {
+
+    }
+
+    // called within ContinueMapWalkPathCreation() creates tile walls based on pathfinder forward direction
     private void CreateMapTileWalls(GameObject _tile)
     {
         GameObject _wallOne = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -409,90 +501,6 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 90f, 0f);
             }
         }
-    }
-
-    // InvokedRepeating on FindAndCreateMapWalkPath()
-    private void ContinueMapWalkPathCreation()
-    {
-        BoxCollider pathColl = PathFinderMapTileGO.GetComponent<BoxCollider>();
-        // Get the bounds of the collider
-        Bounds pathBounds = pathColl.bounds;
-        // Check for colliders within the bounds of the collider
-        Collider[] pathColliders = Physics.OverlapBox(pathBounds.center, pathBounds.extents);
-
-        foreach (Collider collider in pathColliders)
-        {
-            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
-            {
-                GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
-                collider.name = "Map tile walk path";
-                CreateMapTileWalls(collider.gameObject);
-            }
-            else if (collider.name.ToLower().Contains("checkpoint"))
-            {
-                if (!isFirstCheckpointReached)
-                {
-                    GameObject tempCheckpoint = GameObject.Find("Checkpoint temp");
-                    Destroy(tempCheckpoint);
-                    //Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
-                    isFirstCheckpointReached = true;
-                    CancelInvoke();
-                    Invoke("CheckpointReachedCustomWaitTime", 0.2f);
-                    return;
-                }
-
-                //Debug.Log($"currentPathFinderForwardDir: {currentPathFinderForwardDir}.. preExitPathFinderForwardDir : {preExitPathFinderForwardDir}");
-                //CreateMapTileWalls(collider.gameObject); // FIX CHECKPOINT WALL TILES !
-                //Time.timeScale = 0f;
-            }
-            else if (collider.name.ToLower().Contains("exit temp") || collider.name.ToLower().Contains("edge"))
-            {
-                Debug.Log("END OF THE LINE.. Colliding with: " + collider.gameObject.name);
-                CancelInvoke();
-                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f); // spawn waypoint 1 tile before exit
-                CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(); // spawn waypoint at exit tile
-                return;
-            }
-        }
-
-        MovePathFinderMapTileGO();
-
-        // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly 
-        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
-        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
-        foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
-        {
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathfinderRotatingToExit)
-            {
-                if (!isBridgeCreated)
-                {
-                    isBridgeCurrentlyBeingCreated = true;
-                    OffsetTheExitTurnWaypoint(); // offset waypoint position
-                    StartCoroutine(CreateBridge(-PathFinderMapTileGO.transform.forward, 1.5f, 0f, 1f));
-                    isPathfinderRotatingToExit = false;
-                    CancelInvoke();
-                    return;
-                }
-            }
-        }
-
-        // make initial collider contact with overlap path
-        Collider[] OverlapWithPathCollidersInFront = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
-        foreach (Collider collider in OverlapWithPathCollidersInFront)
-        {
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
-            {
-                if (!isBridgeCreated)
-                {
-                    isBridgeCurrentlyBeingCreated = true;
-                    CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
-                    StartCoroutine(CreateBridge(Vector3.zero, 1.5f, 1.5f, 1f));
-                    CancelInvoke();
-                    return;
-                }
-            }
-        }
-        return;
     }
 
     // called from ContinueMapWalkPathCreation() function
