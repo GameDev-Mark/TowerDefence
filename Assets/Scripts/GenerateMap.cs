@@ -18,9 +18,9 @@ public class GenerateMap : MonoBehaviour
     // entranceMapTileNumber = 3, exitMapTileNumber = 30, checkpointMapTileNumber = 72 --> rotating from the left dir .. rotate forward
     /// Testing purposes : Last bridge tile -->
     // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44
-    private int entranceMapTileNumber = 97; // remove these numbers to randomize the tiles
-    private int exitMapTileNumber = 8;
-    private int checkpointMapTileNumber = 44;
+    private int entranceMapTileNumber = 3; // remove these numbers to randomize the tiles
+    private int exitMapTileNumber = 30;
+    private int checkpointMapTileNumber = 72;
     private int waypointCounter;
 
     private List<int> tileList;
@@ -568,10 +568,10 @@ public class GenerateMap : MonoBehaviour
         else
             GenerateBridgeTiles();
         isBridgeCreated = true;
+        isBridgeCurrentlyBeingCreated = false;
         Invoke("CheckpointReachedCustomWaitTime", 0.1f);
         CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(-1f, 0f, -1f);
         yield return new WaitForSeconds(pathFinderMoveSpeed * 2f);
-        isBridgeCurrentlyBeingCreated = false;
     }
 
     // _local bridge counter to keep track of the bridge tile amount
@@ -1091,7 +1091,6 @@ public class GenerateMap : MonoBehaviour
         {
             currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
         }
-        Debug.Log($"FUNCTION() == currentPathFinderForwardDir: {currentPathFinderForwardDir}");
     }
 
     // apply previous path finder gameobject position .. with a basic timer check every X seconds
