@@ -348,9 +348,9 @@ public class GenerateMap : MonoBehaviour
 
         MovePathFinderMapTileGO();
 
-        // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly 
-        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right , pathBounds.extents);
-        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right , pathBounds.extents);
+        // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly and also generate tower tiles
+        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
         {
             if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
@@ -390,6 +390,20 @@ public class GenerateMap : MonoBehaviour
         return;
     }
 
+    // called when waypoints are being spawned in the IENumerator CreateBridge() - if pathfinder collides with a "tower" tile then destory it
+    private void RemoveTowerTileOnBridgeTile()
+    {
+        Collider pathFinderColl = PathFinderMapTileGO.transform.GetComponent<Collider>();
+        Collider[] pathFinderColls = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.up, pathFinderColl.bounds.extents);
+        foreach (Collider coll in pathFinderColls)
+        {
+            if (coll.name.ToLower().Contains("tower") && PathFinderMapTileGO != coll.gameObject)
+            {
+                Destroy(coll.gameObject);
+            }
+        }
+    }
+
     // 
     private int maxAmountOfTowerTiles = 10;
     private int currentAmountOfTowerTiles = 0;
@@ -403,11 +417,11 @@ public class GenerateMap : MonoBehaviour
         /// do some sort of chance or time check of when it is possible to to spawn a tower tile
         /// spawn tower tile... e.g raised platform.
         currentRandomNumberChanceOfTowerTileSpawning = Random.Range(0, 100);
-        if(currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles)
+        if (currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles)
         {
             currentAmountOfTowerTiles++;
             CreateTowerTile(_tileLeftOrRightOfPathFinder, currentAmountOfTowerTiles);
-            Debug.Log($"Spawn tower tile.. gameobject pos: {_tileLeftOrRightOfPathFinder.name}");
+            //Debug.Log($"Spawn tower tile.. gameobject pos: {_tileLeftOrRightOfPathFinder.name}");
         }
     }
 
@@ -584,6 +598,7 @@ public class GenerateMap : MonoBehaviour
                     GenerateBridgeTiles(); // middle bridge tile 
                 }
 
+                RemoveTowerTileOnBridgeTile();
                 wayPointIndex++;
             }
 
@@ -1202,9 +1217,10 @@ public class GenerateMap : MonoBehaviour
         Gizmos.color = Color.red;
         if (Application.isPlaying)
         {
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // forward box
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // right box
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // left box
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.up / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // down box
         }
     }
 }
