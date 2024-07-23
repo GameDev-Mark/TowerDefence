@@ -434,6 +434,7 @@ public class GenerateMap : MonoBehaviour
         _towerTile.name = $"TowerTile_{_towerTileCount}";
         _towerTile.transform.SetParent(parentHolderForMapTiles.transform.GetChild(4)); // tower holder
         _towerTile.transform.position = _tileGO.transform.position;
+        GenerateMapTileMaterial(_towerTile, "RockCliff_Layered");
         _towerTile.AddComponent<TowerPlacement>();
     }
 
@@ -442,6 +443,9 @@ public class GenerateMap : MonoBehaviour
     {
         GameObject _wallOne = GameObject.CreatePrimitive(PrimitiveType.Cube);
         GameObject _wallTwo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+
+        GenerateMapTileMaterial(_wallOne, "BlackRock");
+        GenerateMapTileMaterial(_wallTwo, "BlackRock");
 
         _wallOne.name = "WallOne";
         _wallTwo.name = "WallTwo";

@@ -18,8 +18,15 @@ public abstract class TowerManager : MonoBehaviour
             _tower.transform.position = new Vector3(_towerTile.transform.position.x, 1.5f, _towerTile.transform.position.z);
             _tower.transform.rotation = Quaternion.identity;
             _tower.transform.localScale = Vector3.one / 2f;
+            GenerateTowerMaterial(_tower, "BridgeTile_CobbleStone");
             _towerTile.GetComponent<TowerPlacement>().OccupyTile();
         }
+    }
+
+    private void GenerateTowerMaterial(GameObject _go, string resourceName)
+    {
+        Renderer rend = _go.GetComponent<Renderer>();
+        rend.material = Resources.Load($"Materials/{resourceName}") as Material;
     }
 
     public abstract bool IsTowerTileOccupied();
