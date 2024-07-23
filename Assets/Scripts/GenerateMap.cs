@@ -158,12 +158,7 @@ public class GenerateMap : MonoBehaviour
         mapTileGO.transform.position = new Vector3(xTile, 0.5f, yTile);
         mapTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
         mapTileGO.name = "Map tile ground";
-
-        if (mapTileGO.transform.parent != parentHolderForMapTiles.transform)
-        {
-            mapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
-            //Debug.Log("parent holder add the map tiles GO..");
-        }
+        mapTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(0)); // ground holder
     }
 
     // called on SpawnMapTiles()
@@ -177,6 +172,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     entranceMapTileGO = mapTileGO;
                     entranceMapTileGO.name = "Map tile entrance";
+                    entranceMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
                     GenerateMapTileMaterial(entranceMapTileGO, "BlackRock");
 
                     GameObject _entranceGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -204,6 +200,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     exitMapTileGO = mapTileGO;
                     exitMapTileGO.name = "Map tile exit";
+                    exitMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
                     GenerateMapTileMaterial(exitMapTileGO, "BlackRock");
 
                     GameObject _exitGO = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -230,6 +227,7 @@ public class GenerateMap : MonoBehaviour
         {
             edgeMapTileGO = mapTileGO;
             edgeMapTileGO.name = "Map tile edge";
+            edgeMapTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(1)); // edge holder
             //GenerateMapTileMaterial(edgeMapTileGO, "LavaRock");
 
             GameObject _entranceInvis = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -254,6 +252,7 @@ public class GenerateMap : MonoBehaviour
                 {
                     walkPathCheckpointMapTileGO = mapTileGO;
                     walkPathCheckpointMapTileGO.name = "Map tile checkpoint";
+                    walkPathCheckpointMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
 
                     GameObject _checkpointInvis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
                     _checkpointInvis.name = "Checkpoint temp";
@@ -289,6 +288,8 @@ public class GenerateMap : MonoBehaviour
                 {
                     GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                     collider.gameObject.name = "Map tile walk path";
+                    collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
+
                     PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
                     onComplete?.Invoke();
                     InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, pathFinderMoveSpeed); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
@@ -313,6 +314,7 @@ public class GenerateMap : MonoBehaviour
             {
                 GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 collider.name = "Map tile walk path";
+                collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
                 CreateMapTileWalls(collider.gameObject);
             }
             else if (collider.name.ToLower().Contains("checkpoint"))
@@ -430,6 +432,7 @@ public class GenerateMap : MonoBehaviour
         GameObject _towerTile = GameObject.CreatePrimitive(PrimitiveType.Cube);
         _towerTile.layer = 9; // layer == "Tower"
         _towerTile.name = $"TowerTile_{_towerTileCount}";
+        _towerTile.transform.SetParent(parentHolderForMapTiles.transform.GetChild(4)); // tower holder
         _towerTile.transform.position = _tileGO.transform.position;
     }
 
@@ -767,6 +770,7 @@ public class GenerateMap : MonoBehaviour
         }
         _localBridgeCount++;
         bridgeTileGO.name = $"Bridge tile_{_localBridgeCount}";
+        bridgeTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(5)); // bridge holder
     }
 
     // invoked from ContinueMapWalkPathCreation() && IEnumerator CreateBridge() functions
@@ -894,6 +898,7 @@ public class GenerateMap : MonoBehaviour
             waypointCounter++;
             GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
             waypoint.name = "Waypoint_" + waypointCounter;
+            waypoint.transform.SetParent(parentHolderForMapTiles.transform.GetChild(3)); // waypoint holder
             waypoint.transform.localScale = Vector3.one * 0.25f;
             waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
                 PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
@@ -1165,38 +1170,35 @@ public class GenerateMap : MonoBehaviour
     #endregion
 
     #region ParentHolder for maptiles
+    // initiate gameobject holders on start() 
     private void ParentMapTileHolderCreation()
     {
         parentHolderForMapTiles = new GameObject();
         parentHolderForMapTiles.name = "ParentHolderForMapTiles";
-    }
 
-    private void ParentMapTileGameObjects()
-    {
-        GameObject groundHolder = new GameObject();
-        groundHolder.name = "Ground Holder";
+        GameObject _groundHolder = new GameObject(); // child 0
+        _groundHolder.name = "Ground Holder";
+        _groundHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
-        GameObject edgeHolder = new GameObject();
-        edgeHolder.name = "Edge Holder";
+        GameObject _edgeHolder = new GameObject(); // child 1
+        _edgeHolder.name = "Edge Holder";
+        _edgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
-        foreach (Transform child in parentHolderForMapTiles.transform)
-        {
-            Debug.Log("@parent holder child yes..");
-            //if (child.name.ToLower().Contains("ground"))
-            //{
-            //    child.SetParent(groundHolder.transform);
-            //    Debug.Log("@grounded parent..");
-            //}
+        GameObject _walkPathHolder = new GameObject(); // child 2 
+        _walkPathHolder.name = "Walk Path Holder";
+        _walkPathHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
-            if (child.name.ToLower().Contains("edge"))
-            {
-                child.SetParent(edgeHolder.transform);
-                Debug.Log("@edge parent..");
-            }
-        }
+        GameObject _wayPointsHolder = new GameObject(); // child 3 
+        _wayPointsHolder.name = "Waypoint Holder";
+        _wayPointsHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
-        groundHolder.transform.SetParent(parentHolderForMapTiles.transform);
-        edgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
+        GameObject _towerHolder = new GameObject(); // child 4 
+        _towerHolder.name = "Tower Holder";
+        _towerHolder.transform.SetParent(parentHolderForMapTiles.transform);
+
+        GameObject _bridgeHolder = new GameObject(); // child 5 
+        _bridgeHolder.name = "Bridge Holder";
+        _bridgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
     }
     #endregion
 
