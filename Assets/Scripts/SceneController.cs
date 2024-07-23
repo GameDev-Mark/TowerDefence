@@ -6,14 +6,12 @@ using UnityEngine.SceneManagement;
 
 public class SceneController : MonoBehaviour
 {
-    void Update()
+    // called from InputKeyBindManager.cs 
+    public void ResetScene()
     {
-        if(Input.GetButtonDown("Jump"))
-        {
-            ClearConsole();
-            Debug.Log("@Reset scene...");
-            SceneManager.LoadScene(0);
-        }
+        ClearConsole();
+        Debug.Log("@Reset scene...");
+        SceneManager.LoadScene(0);
     }
 
     private void ClearConsole()

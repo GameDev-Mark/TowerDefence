@@ -434,6 +434,7 @@ public class GenerateMap : MonoBehaviour
         _towerTile.name = $"TowerTile_{_towerTileCount}";
         _towerTile.transform.SetParent(parentHolderForMapTiles.transform.GetChild(4)); // tower holder
         _towerTile.transform.position = _tileGO.transform.position;
+        _towerTile.AddComponent<TowerPlacement>();
     }
 
     // called within ContinueMapWalkPathCreation() creates tile walls based on pathfinder forward direction
