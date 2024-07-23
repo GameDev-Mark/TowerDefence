@@ -56,6 +56,8 @@ public class GenerateMap : MonoBehaviour
     private bool isBridgeCurrentlyBeingCreated = false;
     private bool isPathfinderRotatingToExit = false;
 
+    [SerializeField] LayerMask LayerMask;
+
     private void Start()
     {
         CreatePathFinder();
@@ -333,21 +335,28 @@ public class GenerateMap : MonoBehaviour
             else if (collider.name.ToLower().Contains("exit temp"))
             {
                 Debug.Log("END OF THE LINE.. Colliding with: " + collider.gameObject.name);
-                GenerateAndCreateTowerTiles();
                 CancelInvoke();
                 CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f); // spawn waypoint 1 tile before exit
                 CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(); // spawn waypoint at exit tile
                 return;
+            }
+            if (collider.name.ToLower().Contains("tower") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            {
+                Destroy(collider.gameObject);
             }
         }
 
         MovePathFinderMapTileGO();
 
         // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly 
-        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
-        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right , pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right , pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
         {
+            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            {
+                GenerateAndCreateTowerTiles(collider.gameObject);
+            }
             if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathfinderRotatingToExit)
             {
                 if (!isBridgeCreated)
@@ -362,7 +371,7 @@ public class GenerateMap : MonoBehaviour
             }
         }
 
-        // make initial collider contact with overlap path
+        // make initial collider contact with overlap path.. FORWARD overlap collision
         Collider[] OverlapWithPathCollidersInFront = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersInFront)
         {
@@ -382,9 +391,32 @@ public class GenerateMap : MonoBehaviour
     }
 
     // 
-    private void GenerateAndCreateTowerTiles()
+    private int maxAmountOfTowerTiles = 10;
+    private int currentAmountOfTowerTiles = 0;
+    private int maxNumberChanceOfTowerTileSpawning = 50; // out of 100 
+    private int currentRandomNumberChanceOfTowerTileSpawning = 0;
+    private void GenerateAndCreateTowerTiles(GameObject _tileLeftOrRightOfPathFinder)
     {
+        /// this function is called everytime there is an open position meaning a "ground" tile colliding next to pathfinder
+        /// how do we calculate how many towers to spawn if the path is longer or smaller? 
+        /// some sort of loop to spawn X amount of tower tiles
+        /// do some sort of chance or time check of when it is possible to to spawn a tower tile
+        /// spawn tower tile... e.g raised platform.
+        currentRandomNumberChanceOfTowerTileSpawning = Random.Range(0, 100);
+        if(currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles)
+        {
+            currentAmountOfTowerTiles++;
+            CreateTowerTile(_tileLeftOrRightOfPathFinder, currentAmountOfTowerTiles);
+            Debug.Log($"Spawn tower tile.. gameobject pos: {_tileLeftOrRightOfPathFinder.name}");
+        }
+    }
 
+    private void CreateTowerTile(GameObject _tileGO, int _towerTileCount)
+    {
+        GameObject _towerTile = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        _towerTile.layer = 9; // layer == "Tower"
+        _towerTile.name = $"TowerTile_{_towerTileCount}";
+        _towerTile.transform.position = _tileGO.transform.position;
     }
 
     // called within ContinueMapWalkPathCreation() creates tile walls based on pathfinder forward direction
@@ -907,10 +939,6 @@ public class GenerateMap : MonoBehaviour
     // called on FixedUpdate() - once boolean "isMapWalkPathCheckpointsSpawned" is true this function will proceed
     private void PathFinderPhysics()
     {
-        // ignore layer ( 8 == Pathfinder )
-        int layerMask = 1 << 8;
-        layerMask = ~layerMask;
-
         // Add raycasts in 4 directions ( forward, backwards, right, left )
         Vector3 fwd = PathFinderMapTileGO.transform.TransformDirection(Vector3.forward);
         Vector3 back = PathFinderMapTileGO.transform.TransformDirection(Vector3.back);
@@ -920,13 +948,13 @@ public class GenerateMap : MonoBehaviour
         RaycastHit hit;
 
         // raycasting backwards --->
-        if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, back, out hit, 10f, ~LayerMask))
         {
             InitialPathFinderGameObjectRotation(new Vector3(0f, 0f, 0f), hit, "0f backwards");
         }
 
         // raycasting to the right --->
-        if (Physics.Raycast(PathFinderMapTileGO.transform.position, right, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, right, out hit, 10f, ~LayerMask))
         {
             PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, 90f, 0f), hit, "Rotate right");
 
@@ -937,7 +965,7 @@ public class GenerateMap : MonoBehaviour
         }
 
         // raycasting to the left --->
-        if (Physics.Raycast(PathFinderMapTileGO.transform.position, left, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, left, out hit, 10f, ~LayerMask))
         {
             PathFinderRotateTowardsExitAndCheckpoint(new Vector3(0f, -90f, 0f), hit, "Rotate left");
 
@@ -948,7 +976,7 @@ public class GenerateMap : MonoBehaviour
         }
 
         // raycasting forwards --->
-        if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, layerMask))
+        if (Physics.Raycast(PathFinderMapTileGO.transform.position, fwd, out hit, 10f, ~LayerMask))
         {
             if (!isExitOrCheckpointInSightForPathFinder)
             {
@@ -1175,8 +1203,8 @@ public class GenerateMap : MonoBehaviour
         if (Application.isPlaying)
         {
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents);
         }
     }
 }

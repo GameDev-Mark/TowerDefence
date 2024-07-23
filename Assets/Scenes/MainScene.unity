@@ -528,6 +528,9 @@ MonoBehaviour:
   waypointsList: []
   entranceMapTileGO: {fileID: 0}
   exitMapTileGO: {fileID: 0}
+  LayerMask:
+    serializedVersion: 2
+    m_Bits: 768
 --- !u!4 &1548851484
 Transform:
   m_ObjectHideFlags: 0
