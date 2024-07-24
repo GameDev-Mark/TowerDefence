@@ -18,9 +18,9 @@ public class GenerateMap : MonoBehaviour
     // entranceMapTileNumber = 3, exitMapTileNumber = 30, checkpointMapTileNumber = 72 --> rotating from the left dir .. rotate forward
     /// Testing purposes : Last bridge tile -->
     // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44
-    private int entranceMapTileNumber = 3; // remove these numbers to randomize the tiles
-    private int exitMapTileNumber = 30;
-    private int checkpointMapTileNumber = 72;
+    private int entranceMapTileNumber = 0; // remove these numbers to randomize the tiles
+    private int exitMapTileNumber = 0;
+    private int checkpointMapTileNumber = 0;
     private int waypointCounter;
 
     private List<int> tileList;
@@ -54,7 +54,8 @@ public class GenerateMap : MonoBehaviour
     private bool isExitOrCheckpointInSightForPathFinder = false;
     private bool isBridgeCreated = false;
     private bool isBridgeCurrentlyBeingCreated = false;
-    private bool isPathfinderRotatingToExit = false;
+    private bool isPathFinderRotatingToExit = false;
+    private bool hasPathFindReachedExit = false;
 
     [SerializeField] LayerMask LayerMask;
 
@@ -181,7 +182,9 @@ public class GenerateMap : MonoBehaviour
                     _entranceGO.transform.localScale = Vector3.one * 0.75f;
                     _entranceGO.transform.position = entranceMapTileGO.transform.position + Vector3.up * 0.5f;
 
-                    GenerateMapTileMaterial(_entranceGO, "Entrance_Exit");
+                    TurnOffMeshRenderer(_entranceGO);
+
+                    //GenerateMapTileMaterial(_entranceGO, "Entrance_Exit");
 
                     isMapEntranceSpawned = true;
                 }
@@ -209,7 +212,9 @@ public class GenerateMap : MonoBehaviour
                     _exitGO.transform.localScale = Vector3.one * 0.75f;
                     _exitGO.transform.position = exitMapTileGO.transform.position + Vector3.up * 0.5f;
 
-                    GenerateMapTileMaterial(_exitGO, "Entrance_Exit");
+                    TurnOffMeshRenderer(_exitGO);
+
+                    //GenerateMapTileMaterial(_exitGO, "Entrance_Exit");
 
                     // remove or disable edge tile in exitmaptileGO parent
                     Destroy(exitMapTileGO.transform.GetChild(0).gameObject);
@@ -243,7 +248,6 @@ public class GenerateMap : MonoBehaviour
     // invoked on start()
     private void FindAndCreateMapWalkPathCheckpoints()
     {
-        // randomly generate checkpoints on ground map ( 1 - 4 )
         if (!isMapWalkPathCheckpointsSpawned)
         {
             for (int i = 0; i <= tileList.Count; i++)
@@ -260,6 +264,7 @@ public class GenerateMap : MonoBehaviour
                     _checkpointInvis.transform.localScale = Vector3.one * 0.5f;
                     _checkpointInvis.transform.position = walkPathCheckpointMapTileGO.transform.position + Vector3.up * 0.5f;
 
+                    TurnOffMeshRenderer(_checkpointInvis);
                     GenerateMapTileMaterial(mapTileGO, "GroundTile_OffGreen_CobbleStone");
                     isMapWalkPathCheckpointsSpawned = true;
                 }
@@ -290,7 +295,8 @@ public class GenerateMap : MonoBehaviour
                     collider.gameObject.name = "Map tile walk path";
                     collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
 
-                    PathFinderMapTileGO.transform.position = new Vector3(collider.transform.position.x, 1f, collider.transform.position.z);
+                    InitialPositionOfPathFinder(collider); // initial pathfinder.transform.position
+
                     onComplete?.Invoke();
                     InvokeRepeating("ContinueMapWalkPathCreation", 0.5f, pathFinderMoveSpeed); // wait (0.5f) time - for the initial spawn of pathfinder gameobject to rotate correctly
                     return;
@@ -359,14 +365,14 @@ public class GenerateMap : MonoBehaviour
             {
                 GenerateAndCreateTowerTiles(collider.gameObject);
             }
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathfinderRotatingToExit)
+            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathFinderRotatingToExit)
             {
                 if (!isBridgeCreated)
                 {
                     isBridgeCurrentlyBeingCreated = true;
                     OffsetTheExitTurnWaypoint(); // offset waypoint position
                     StartCoroutine(CreateBridge(-PathFinderMapTileGO.transform.forward, 1.5f, 0f, 1f));
-                    isPathfinderRotatingToExit = false;
+                    isPathFinderRotatingToExit = false;
                     CancelInvoke();
                     return;
                 }
@@ -387,6 +393,16 @@ public class GenerateMap : MonoBehaviour
                     CancelInvoke();
                     return;
                 }
+            }
+            if (collider.name.ToLower().Contains("exit") && PathFinderMapTileGO != collider.gameObject)
+            {
+                if (!hasPathFindReachedExit)
+                {
+                    InstantiatePrefab_MapEntranceAndExit("Exit Arch Way", exitMapTileGO);
+                    hasPathFindReachedExit = true;
+                    return;
+                }
+                return;
             }
         }
         return;
@@ -792,6 +808,12 @@ public class GenerateMap : MonoBehaviour
         PathFinderMapTileGO.transform.Translate(transform.forward * 1f, Space.Self);
     }
 
+    // initial positioning pathfinder.transform.position on spawn .. called within FindAndCreateMapWalkPath()
+    private void InitialPositionOfPathFinder(Collider coll)
+    {
+        PathFinderMapTileGO.transform.position = new Vector3(coll.transform.position.x, 1f, coll.transform.position.z);
+    }
+
     // called within CreateMapSequentially() function sequence
     private (int, int, int) GenerateEntranceAndExitAndCheckpoints_MapTileNumbers(Action onComplete)
     {
@@ -890,8 +912,9 @@ public class GenerateMap : MonoBehaviour
         PathFinderMapTileGO.layer = 8;
         PathFinderMapTileGO.AddComponent<BoxCollider>();
         PathFinderMapTileGO.transform.localScale = Vector3.one * 0.5f;
-        GenerateMapTileMaterial(PathFinderMapTileGO, "PathFinder");
+        //GenerateMapTileMaterial(PathFinderMapTileGO, "PathFinder");
         pathFinderMoveSpeed = 0.15f;
+        TurnOffMeshRenderer(PathFinderMapTileGO);
     }
 
     // this function is called whenever the pathfinder rotates and turns a different direction
@@ -908,13 +931,45 @@ public class GenerateMap : MonoBehaviour
             waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
                 PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
             waypoint.transform.rotation = PathFinderMapTileGO.transform.rotation;
-            GenerateMapTileMaterial(waypoint, "PathFinder");
+            //GenerateMapTileMaterial(waypoint, "PathFinder");
+            TurnOffMeshRenderer(waypoint);
             waypointsList.Add(waypoint);
         }
         else // if you want to move a waypoint that has already been created
         {
             moveableWaypoint.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
                 PathFinderMapTileGO.transform.position.y + optionalOffsetY, PathFinderMapTileGO.transform.position.z + optionalOffsetZ);
+        }
+    }
+
+    private void InstantiatePrefab_MapEntranceAndExit(string _GOName, GameObject _GOParent, Vector3 _optionalRotation = default)
+    {
+        GameObject _archWay = Instantiate(Resources.Load("Prefabs/ArchWithPillars") as GameObject);
+        _archWay.name = $"{_GOName}";
+        _archWay.transform.SetParent(_GOParent.transform);
+        _archWay.transform.position = _GOParent.transform.position;
+        if (_optionalRotation == default)
+        {
+            if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+            {
+                _archWay.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+            }
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
+            {
+                _archWay.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
+            }
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+            {
+                _archWay.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
+            }
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+            {
+                _archWay.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
+            }
+        }
+        else
+        {
+            _archWay.transform.rotation = Quaternion.Euler(_optionalRotation.x, _optionalRotation.y, _optionalRotation.z);
         }
     }
 
@@ -1029,6 +1084,7 @@ public class GenerateMap : MonoBehaviour
                 isPathFinderInitialSpawnCompleted = true;
                 PathFinderMapTileGO.transform.rotation = Quaternion.Euler(rotation);
                 previousPathFinderForwardDir = currentPathFinderForwardDir;
+                InstantiatePrefab_MapEntranceAndExit("Entrance Arch Way", entranceMapTileGO, rotation);
             }
         }
     }
@@ -1050,7 +1106,7 @@ public class GenerateMap : MonoBehaviour
         {
             Debug.Log($"Exit is in sight: {log}");
             CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
-            isPathfinderRotatingToExit = true;
+            isPathFinderRotatingToExit = true;
             GameObject exitTurnWaypoint = waypointsList.Last(); // get the last waypoint and rename it so we can differentiate it
             exitTurnWaypoint.name = $"Waypoint_ExitTurn_{waypointCounter}";
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
@@ -1132,7 +1188,7 @@ public class GenerateMap : MonoBehaviour
         return rayCastDirectionLeftOrRight;
     }
 
-    private void ReturnForwardDirectionPathFinderIsFacing()
+    private pathFinderForwardDirectionToGlobal ReturnForwardDirectionPathFinderIsFacing()
     {
         Quaternion forwardDir = PathFinderMapTileGO.transform.rotation;
         var rotation = Math.Round(forwardDir.eulerAngles.y);
@@ -1152,6 +1208,7 @@ public class GenerateMap : MonoBehaviour
         {
             currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
         }
+        return currentPathFinderForwardDir;
     }
 
     // apply previous path finder gameobject position .. with a basic timer check every X seconds
