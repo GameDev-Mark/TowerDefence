@@ -17,7 +17,8 @@ public class GenerateMap : MonoBehaviour
     // entranceMapTileNumber = 93, exitMapTileNumber = 70, checkpointMapTileNumber = 22 --> rotating from the right dir .. rotate forward
     // entranceMapTileNumber = 3, exitMapTileNumber = 30, checkpointMapTileNumber = 72 --> rotating from the left dir .. rotate forward
     /// Testing purposes : Last bridge tile -->
-    // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44
+    // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44 (With exit on last tile when turning)
+    // entranceMapTileNumber = 71, exitMapTileNumber = 7, checkpointMapTileNumber = 56 (With edge on last tile when turning)
     private int entranceMapTileNumber = 0; // remove these numbers to randomize the tiles
     private int exitMapTileNumber = 0;
     private int checkpointMapTileNumber = 0;
@@ -472,16 +473,16 @@ public class GenerateMap : MonoBehaviour
         _wallOne.transform.SetParent(_tile.transform);
         _wallTwo.transform.SetParent(_tile.transform);
 
-        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
         {
-            if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -497,16 +498,16 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
         {
-            if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -521,16 +522,16 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
         {
-            if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -546,16 +547,16 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 90f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
         {
-            if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
@@ -640,7 +641,7 @@ public class GenerateMap : MonoBehaviour
         yield return null;
         if (PathFinderMapTileGO.transform.position != new Vector3(PathFinderMapTileGO.transform.position.x, 1f, PathFinderMapTileGO.transform.position.z))
             PathFinderMapTileGO.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x, 1f, PathFinderMapTileGO.transform.position.z);
-        yield return new WaitForEndOfFrame();
+        yield return new WaitForSeconds(0.1f);
         Destroy(positionB);
         if (optionalOffsetForAPos != default)
             GenerateBridgeTiles(1f, 0f, 1f); // last bridge tile
@@ -677,17 +678,17 @@ public class GenerateMap : MonoBehaviour
 
         if (_localBridgeCount != 1) bridgeTileGO.transform.localScale = new Vector3(1f, 1.3f, 1f); // middle bridge tile
 
-        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
@@ -708,17 +709,17 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 180f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
@@ -739,7 +740,7 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
         {
             if (_localBridgeCount == 0)
             {
@@ -764,7 +765,7 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
             }
         }
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
         {
             if (_localBridgeCount == 0)
             {
@@ -977,13 +978,13 @@ public class GenerateMap : MonoBehaviour
     private void CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder
         (float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default, Transform moveableWaypoint = default)
     {
-        if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
             CreateWaypoint(0f, optionalOffsetY, -optionalOffsetZ, moveableWaypoint);
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
             CreateWaypoint(0f, optionalOffsetY, optionalOffsetZ, moveableWaypoint);
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
             CreateWaypoint(-optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
-        else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
             CreateWaypoint(optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
     }
 
@@ -994,23 +995,23 @@ public class GenerateMap : MonoBehaviour
         GameObject waypointExitTurn = waypointsList.Last();
         if (waypointExitTurn.name.ToLower().Contains("exitturn"))
         {
-            if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
             {
-                if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right) // working
+                if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
-                else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, -1f, waypointExitTurn.transform);
             }
-            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
             {
-                if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right) // working
+                if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1, 0f, 1f, waypointExitTurn.transform);
-                else if (previousPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, 1f, waypointExitTurn.transform);
             }
-            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Right)
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
                 CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
-            else if (currentPathFinderForwardDir == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
                 CreateWaypoint(1f, 0f, -1f, waypointExitTurn.transform);
         }
     }
@@ -1083,7 +1084,7 @@ public class GenerateMap : MonoBehaviour
             {
                 isPathFinderInitialSpawnCompleted = true;
                 PathFinderMapTileGO.transform.rotation = Quaternion.Euler(rotation);
-                previousPathFinderForwardDir = currentPathFinderForwardDir;
+                previousPathFinderForwardDir = ReturnForwardDirectionPathFinderIsFacing();
                 InstantiatePrefab_MapEntranceAndExit("Entrance Arch Way", entranceMapTileGO, rotation);
             }
         }
@@ -1214,9 +1215,9 @@ public class GenerateMap : MonoBehaviour
     // apply previous path finder gameobject position .. with a basic timer check every X seconds
     float _timerDuration = 0.25f;
     float _currentDuration = 0f;
-    private void PreviousPathFinderForwardDirection()
+    private pathFinderForwardDirectionToGlobal PreviousPathFinderForwardDirection()
     {
-        if (previousPathFinderForwardDir != currentPathFinderForwardDir)
+        if (previousPathFinderForwardDir != ReturnForwardDirectionPathFinderIsFacing())
         {
             if (_currentDuration < _timerDuration)
             {
@@ -1225,9 +1226,10 @@ public class GenerateMap : MonoBehaviour
             else if (_currentDuration > _timerDuration)
             {
                 _currentDuration = 0f;
-                previousPathFinderForwardDir = currentPathFinderForwardDir;
+                previousPathFinderForwardDir = ReturnForwardDirectionPathFinderIsFacing();
             }
         }
+        return previousPathFinderForwardDir;
     }
     #endregion
 
