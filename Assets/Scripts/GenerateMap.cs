@@ -19,6 +19,8 @@ public class GenerateMap : MonoBehaviour
     /// Testing purposes : Last bridge tile -->
     // entranceMapTileNumber = 97, exitMapTileNumber = 8, checkpointMapTileNumber = 44 (With exit on last tile when turning)
     // entranceMapTileNumber = 71, exitMapTileNumber = 7, checkpointMapTileNumber = 56 (With edge on last tile when turning)
+    /// Testing purposes : checkpoint rotating to exit -->
+    // entranceMapTileNumber = 70, exitMapTileNumber = 50, checkpointMapTileNumber = 43
     private int entranceMapTileNumber = 0; // remove these numbers to randomize the tiles
     private int exitMapTileNumber = 0;
     private int checkpointMapTileNumber = 0;
@@ -79,7 +81,7 @@ public class GenerateMap : MonoBehaviour
     }
     private void LateUpdate()
     {
-        PreviousPathFinderForwardDirection();
+        ReturnPreviousPathFinderForwardDirection();
     }
 
     private void MapTileSize()
@@ -328,18 +330,19 @@ public class GenerateMap : MonoBehaviour
             {
                 if (!isFirstCheckpointReached)
                 {
+                    Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
+                    isFirstCheckpointReached = true;
                     GameObject tempCheckpoint = GameObject.Find("Checkpoint temp");
                     Destroy(tempCheckpoint);
-                    //Debug.Log($"Reached first checkpoint.. Colliding with: {collider.gameObject.name}");
-                    isFirstCheckpointReached = true;
                     CancelInvoke();
-                    Invoke("CheckpointReachedCustomWaitTime", 0.2f);
+                    Invoke("CheckpointReachedCustomWaitTime", 0.01f);
                     return;
                 }
 
-                //Debug.Log($"currentPathFinderForwardDir: {currentPathFinderForwardDir}.. preExitPathFinderForwardDir : {preExitPathFinderForwardDir}");
-                //CreateMapTileWalls(collider.gameObject); // FIX CHECKPOINT WALL TILES !
-                //Time.timeScale = 0f;
+                if (collider.name.ToLower().Contains("temp"))
+                    CreateMapTileWalls(collider.gameObject.transform.parent.gameObject);
+                else
+                    CreateMapTileWalls(collider.gameObject);
             }
             else if (collider.name.ToLower().Contains("exit temp"))
             {
@@ -470,19 +473,19 @@ public class GenerateMap : MonoBehaviour
         _wallOne.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
         _wallTwo.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
 
-        _wallOne.transform.SetParent(_tile.transform);
-        _wallTwo.transform.SetParent(_tile.transform);
+        _wallOne.transform.SetParent(_tile.transform, true);
+        _wallTwo.transform.SetParent(_tile.transform, true);
 
         if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
         {
-            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -500,14 +503,14 @@ public class GenerateMap : MonoBehaviour
         }
         else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
         {
-            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -524,14 +527,14 @@ public class GenerateMap : MonoBehaviour
         }
         else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
         {
-            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -549,14 +552,14 @@ public class GenerateMap : MonoBehaviour
         }
         else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
         {
-            if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
@@ -682,13 +685,13 @@ public class GenerateMap : MonoBehaviour
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
@@ -713,13 +716,13 @@ public class GenerateMap : MonoBehaviour
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
@@ -997,16 +1000,16 @@ public class GenerateMap : MonoBehaviour
         {
             if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
             {
-                if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
+                if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
-                else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, -1f, waypointExitTurn.transform);
             }
             else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
             {
-                if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
+                if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1, 0f, 1f, waypointExitTurn.transform);
-                else if (PreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, 1f, waypointExitTurn.transform);
             }
             else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
@@ -1215,7 +1218,7 @@ public class GenerateMap : MonoBehaviour
     // apply previous path finder gameobject position .. with a basic timer check every X seconds
     float _timerDuration = 0.25f;
     float _currentDuration = 0f;
-    private pathFinderForwardDirectionToGlobal PreviousPathFinderForwardDirection()
+    private pathFinderForwardDirectionToGlobal ReturnPreviousPathFinderForwardDirection()
     {
         if (previousPathFinderForwardDir != ReturnForwardDirectionPathFinderIsFacing())
         {
