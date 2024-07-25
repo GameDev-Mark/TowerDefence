@@ -37,9 +37,11 @@ public class GenerateMap : MonoBehaviour
     private float pathFinderMoveSpeed;
 
     private string rayCastDirectionLeftOrRight;
-    private enum pathFinderForwardDirectionToGlobal { Forward, Down, Right, Left };
-    private pathFinderForwardDirectionToGlobal currentPathFinderForwardDir;
-    private pathFinderForwardDirectionToGlobal previousPathFinderForwardDir;
+    private enum PathFinderForwardDirectionToGlobal { Forward, Down, Right, Left };
+    private PathFinderForwardDirectionToGlobal currentPathFinderForwardDir;
+    private PathFinderForwardDirectionToGlobal previousPathFinderForwardDir;
+    private PathFinderForwardDirectionToGlobal pathFinderNewDirectionChange;
+    private List<string> pathFinderDirectionHistory = new List<string>();
 
     private GameObject mapTileGO;
     [Space(20), SerializeField] public GameObject entranceMapTileGO;
@@ -60,6 +62,13 @@ public class GenerateMap : MonoBehaviour
     private bool isPathFinderRotatingToExit = false;
     private bool hasPathFindReachedExit = false;
 
+    // almost all variables for renaming tiles, etc
+    private string mapTileWalkPathName = "Map tile walk path", mapTileGroundName = "Map tile ground", mapTileEntranceName = "Entrance temp",
+        mapTileExitName = "Exit temp", mapTileEdgeName = "Edge temp", mapTileCheckpointName = "Checkpoint",
+        towerTileName = "Tower tile", bridgeTileName = "Bridge tile", waypointName = "Waypoint", waypointExitTurnName = "Waypoint_ExitTurn",
+        lastMapTileWalkPathName = "Last map tile walk path";
+
+
     [SerializeField] LayerMask LayerMask;
 
     private void Start()
@@ -73,15 +82,16 @@ public class GenerateMap : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (isMapWalkPathCheckpointsSpawned) PathFinderPhysics();
+        if (isMapWalkPathCheckpointsSpawned && !hasPathFindReachedExit) PathFinderPhysics();
     }
     private void Update()
     {
-        ReturnForwardDirectionPathFinderIsFacing();
-    }
-    private void LateUpdate()
-    {
-        ReturnPreviousPathFinderForwardDirection();
+        if (!hasPathFindReachedExit)
+        {
+            ReturnCurrentPathFinderForwardDirection();
+            ReturnPreviousPathFinderForwardDirection();
+            CoolDownTimerForDirectionChange();
+        }
     }
 
     private void MapTileSize()
@@ -100,6 +110,7 @@ public class GenerateMap : MonoBehaviour
                 FindAndCreateMapWalkPath(() =>
                 {
                     Debug.Log("@map completion done!");
+                    SetLastWalkTileToLastBeforeExit();
                 });
             });
         });
@@ -161,7 +172,7 @@ public class GenerateMap : MonoBehaviour
         mapTileGO = GameObject.CreatePrimitive(PrimitiveType.Quad);
         mapTileGO.transform.position = new Vector3(xTile, 0.5f, yTile);
         mapTileGO.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
-        mapTileGO.name = "Map tile ground";
+        SetGameObjectName(mapTileGO, mapTileGroundName);
         mapTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(0)); // ground holder
     }
 
@@ -175,7 +186,7 @@ public class GenerateMap : MonoBehaviour
                 if (i == entranceMapTileNumber)
                 {
                     entranceMapTileGO = mapTileGO;
-                    entranceMapTileGO.name = "Map tile entrance";
+                    SetGameObjectName(entranceMapTileGO, mapTileEntranceName);
                     entranceMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
                     GenerateMapTileMaterial(entranceMapTileGO, "BlackRock");
 
@@ -205,7 +216,7 @@ public class GenerateMap : MonoBehaviour
                 if (i == exitMapTileNumber)
                 {
                     exitMapTileGO = mapTileGO;
-                    exitMapTileGO.name = "Map tile exit";
+                    SetGameObjectName(exitMapTileGO, mapTileExitName);
                     exitMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
                     GenerateMapTileMaterial(exitMapTileGO, "BlackRock");
 
@@ -234,7 +245,7 @@ public class GenerateMap : MonoBehaviour
         if (edgeOfMapTileList.Contains(tileList.Count))
         {
             edgeMapTileGO = mapTileGO;
-            edgeMapTileGO.name = "Map tile edge";
+            SetGameObjectName(edgeMapTileGO, mapTileEdgeName);
             edgeMapTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(1)); // edge holder
             //GenerateMapTileMaterial(edgeMapTileGO, "LavaRock");
 
@@ -258,7 +269,7 @@ public class GenerateMap : MonoBehaviour
                 if (i == checkpointMapTileNumber)
                 {
                     walkPathCheckpointMapTileGO = mapTileGO;
-                    walkPathCheckpointMapTileGO.name = "Map tile checkpoint";
+                    SetGameObjectName(walkPathCheckpointMapTileGO, mapTileCheckpointName);
                     walkPathCheckpointMapTileGO.transform.SetParent(parentHolderForMapTiles.transform);
 
                     GameObject _checkpointInvis = GameObject.CreatePrimitive(PrimitiveType.Cylinder);
@@ -286,16 +297,15 @@ public class GenerateMap : MonoBehaviour
 
         foreach (Collider collider in entranceColliders)
         {
-            if (!collider.name.ToLower().Contains("edge") &&
-                !collider.name.ToLower().Contains("entrance"))
+            if (collider.name != mapTileEdgeName && collider.name != mapTileEntranceName)
             {
                 var dis = Vector3.Distance(entranceMapTileGO.transform.position,
                     collider.transform.position);
 
-                if (collider.name.ToLower().Contains("ground") && dis == 1)
+                if (collider.name == mapTileGroundName && dis == 1)
                 {
                     GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
-                    collider.gameObject.name = "Map tile walk path";
+                    SetGameObjectName(collider.gameObject, mapTileWalkPathName);
                     collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
 
                     InitialPositionOfPathFinder(collider); // initial pathfinder.transform.position
@@ -319,10 +329,16 @@ public class GenerateMap : MonoBehaviour
 
         foreach (Collider collider in pathColliders)
         {
-            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            if (collider.name == mapTileGroundName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
             {
                 GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
-                collider.name = "Map tile walk path";
+                SetGameObjectName(collider.gameObject, mapTileWalkPathName);
+                collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
+                CreateMapTileWalls(collider.gameObject);
+            }
+            else if (collider.name == lastMapTileWalkPathName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated && isPathFinderRotatingToExit)
+            {
+                GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
                 CreateMapTileWalls(collider.gameObject);
             }
@@ -365,11 +381,11 @@ public class GenerateMap : MonoBehaviour
         Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
         {
-            if (collider.name.ToLower().Contains("ground") && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            if (collider.name == mapTileGroundName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated) // tower tiles creation
             {
                 GenerateAndCreateTowerTiles(collider.gameObject);
             }
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject && isPathFinderRotatingToExit)
+            if (collider.name == mapTileWalkPathName && PathFinderMapTileGO != collider.gameObject && isPathFinderRotatingToExit) // bridge creation
             {
                 if (!isBridgeCreated)
                 {
@@ -387,7 +403,7 @@ public class GenerateMap : MonoBehaviour
         Collider[] OverlapWithPathCollidersInFront = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersInFront)
         {
-            if (collider.name.ToLower().Contains("walk") && PathFinderMapTileGO != collider.gameObject)
+            if (collider.name == mapTileWalkPathName && PathFinderMapTileGO != collider.gameObject)
             {
                 if (!isBridgeCreated)
                 {
@@ -398,7 +414,7 @@ public class GenerateMap : MonoBehaviour
                     return;
                 }
             }
-            if (collider.name.ToLower().Contains("exit") && PathFinderMapTileGO != collider.gameObject)
+            if (collider.name == mapTileExitName && PathFinderMapTileGO != collider.gameObject)
             {
                 if (!hasPathFindReachedExit)
                 {
@@ -406,7 +422,6 @@ public class GenerateMap : MonoBehaviour
                     hasPathFindReachedExit = true;
                     return;
                 }
-                return;
             }
         }
         return;
@@ -451,7 +466,7 @@ public class GenerateMap : MonoBehaviour
     {
         GameObject _towerTile = GameObject.CreatePrimitive(PrimitiveType.Cube);
         _towerTile.layer = 9; // layer == "Tower"
-        _towerTile.name = $"TowerTile_{_towerTileCount}";
+        SetGameObjectName(_towerTile, $"{towerTileName}_{_towerTileCount}");
         _towerTile.transform.SetParent(parentHolderForMapTiles.transform.GetChild(4)); // tower holder
         _towerTile.transform.position = _tileGO.transform.position;
         GenerateMapTileMaterial(_towerTile, "RockCliff_Layered");
@@ -467,8 +482,8 @@ public class GenerateMap : MonoBehaviour
         GenerateMapTileMaterial(_wallOne, "BlackRock");
         GenerateMapTileMaterial(_wallTwo, "BlackRock");
 
-        _wallOne.name = "WallOne";
-        _wallTwo.name = "WallTwo";
+        SetGameObjectName(_wallOne, "Wall One");
+        SetGameObjectName(_wallTwo, "Wall Two");
 
         _wallOne.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
         _wallTwo.transform.localScale = new Vector3(0.1f, 0.5f, 1f);
@@ -476,43 +491,18 @@ public class GenerateMap : MonoBehaviour
         _wallOne.transform.SetParent(_tile.transform, true);
         _wallTwo.transform.SetParent(_tile.transform, true);
 
-        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
         {
-            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+            if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
-                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
-                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
-                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
-                //Time.timeScale = 0f;
-            }
-            else
-            {
-                _wallOne.transform.position = _tile.transform.position + _tile.transform.right / 2;
-                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
-                _wallOne.transform.rotation = Quaternion.Euler(0, 0f, 0f);
-                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
-            }
-        }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
-        {
-            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
-            {
-                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
-                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
-                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
-                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
-            }
-            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
-            {
-                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
@@ -525,16 +515,40 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
         }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
         {
-            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
+            else
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.right / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+        }
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
+        {
+            if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
+            {
+                _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
+                _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
+                _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
+                _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
+            }
+            else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + -_tile.transform.right / 2;
@@ -550,16 +564,16 @@ public class GenerateMap : MonoBehaviour
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 90f, 0f);
             }
         }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
         {
-            if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
             {
                 _wallOne.transform.position = _tile.transform.position + _tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
                 _wallOne.transform.rotation = Quaternion.Euler(0, 90f, 0f);
                 _wallTwo.transform.rotation = Quaternion.Euler(0, 0f, 0f);
             }
-            else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
             {
                 _wallOne.transform.position = _tile.transform.position + -_tile.transform.up / 2;
                 _wallTwo.transform.position = _tile.transform.position + _tile.transform.right / 2;
@@ -587,7 +601,7 @@ public class GenerateMap : MonoBehaviour
             positionA.y = optionalOffsetForFirstWaypointSpawnYAxis;
 
         GameObject positionB = new GameObject(); // initialize position B for slerp.. temp gameobject.. destroy positionB gameobject when pathfinder reaches its destination.
-        positionB.name = "Position B";
+        positionB.name = "Position B"; // tempoary gameobject.. removing 
         Vector3 postionB = PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward * 2f;
         if (optionalOffsetForLastWaypointSpawnYAxis != default)
             postionB.y = optionalOffsetForLastWaypointSpawnYAxis;
@@ -681,17 +695,17 @@ public class GenerateMap : MonoBehaviour
 
         if (_localBridgeCount != 1) bridgeTileGO.transform.localScale = new Vector3(1f, 1.3f, 1f); // middle bridge tile
 
-        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + -offsetPosZ));
@@ -712,17 +726,17 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 180f, 0f);
             }
         }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
         {
             if (_localBridgeCount == 0)
             {
-                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right)
+                if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
                     bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 90f, 0f);
                 }
-                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left)
+                else if (offsetPosZ != default && ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
                 {
                     bridgeTileGO.transform.position = new Vector3
                     (Mathf.Round(PathFinderMapTileGO.transform.position.x), yResult + offsetPosY, Mathf.Round(PathFinderMapTileGO.transform.position.z + offsetPosZ));
@@ -743,7 +757,7 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, 0f, 0f);
             }
         }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
         {
             if (_localBridgeCount == 0)
             {
@@ -768,7 +782,7 @@ public class GenerateMap : MonoBehaviour
                 bridgeTileGO.transform.rotation = Quaternion.Euler(50f, -90f, 0f);
             }
         }
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
         {
             if (_localBridgeCount == 0)
             {
@@ -794,7 +808,7 @@ public class GenerateMap : MonoBehaviour
             }
         }
         _localBridgeCount++;
-        bridgeTileGO.name = $"Bridge tile_{_localBridgeCount}";
+        SetGameObjectName(bridgeTileGO, $"{bridgeTileName}_{_localBridgeCount}");
         bridgeTileGO.transform.SetParent(parentHolderForMapTiles.transform.GetChild(5)); // bridge holder
     }
 
@@ -912,7 +926,7 @@ public class GenerateMap : MonoBehaviour
     {
         // create GO - give it specifics
         PathFinderMapTileGO = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-        PathFinderMapTileGO.name = "PathFinder";
+        SetGameObjectName(PathFinderMapTileGO, "PathFinder");
         PathFinderMapTileGO.layer = 8;
         PathFinderMapTileGO.AddComponent<BoxCollider>();
         PathFinderMapTileGO.transform.localScale = Vector3.one * 0.5f;
@@ -929,7 +943,7 @@ public class GenerateMap : MonoBehaviour
         {
             waypointCounter++;
             GameObject waypoint = GameObject.CreatePrimitive(PrimitiveType.Capsule);
-            waypoint.name = "Waypoint_" + waypointCounter;
+            SetGameObjectName(waypoint, $"{waypointName}_{waypointCounter}");
             waypoint.transform.SetParent(parentHolderForMapTiles.transform.GetChild(3)); // waypoint holder
             waypoint.transform.localScale = Vector3.one * 0.25f;
             waypoint.transform.position = new Vector3(PathFinderMapTileGO.transform.position.x + optionalOffsetX,
@@ -949,24 +963,24 @@ public class GenerateMap : MonoBehaviour
     private void InstantiatePrefab_MapEntranceAndExit(string _GOName, GameObject _GOParent, Vector3 _optionalRotation = default)
     {
         GameObject _archWay = Instantiate(Resources.Load("Prefabs/ArchWithPillars") as GameObject);
-        _archWay.name = $"{_GOName}";
+        SetGameObjectName(_archWay, _GOName);
         _archWay.transform.SetParent(_GOParent.transform);
         _archWay.transform.position = _GOParent.transform.position;
         if (_optionalRotation == default)
         {
-            if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
             {
                 _archWay.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
             }
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
             {
                 _archWay.transform.rotation = Quaternion.Euler(0f, 0f, 0f);
             }
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
             {
                 _archWay.transform.rotation = Quaternion.Euler(0f, -90f, 0f);
             }
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
             {
                 _archWay.transform.rotation = Quaternion.Euler(0f, 90f, 0f);
             }
@@ -981,13 +995,13 @@ public class GenerateMap : MonoBehaviour
     private void CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder
         (float optionalOffsetX = default, float optionalOffsetY = default, float optionalOffsetZ = default, Transform moveableWaypoint = default)
     {
-        if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+        if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
             CreateWaypoint(0f, optionalOffsetY, -optionalOffsetZ, moveableWaypoint);
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
             CreateWaypoint(0f, optionalOffsetY, optionalOffsetZ, moveableWaypoint);
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
             CreateWaypoint(-optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
-        else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+        else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
             CreateWaypoint(optionalOffsetX, optionalOffsetY, 0f, moveableWaypoint);
     }
 
@@ -996,25 +1010,25 @@ public class GenerateMap : MonoBehaviour
     private void OffsetTheExitTurnWaypoint()
     {
         GameObject waypointExitTurn = waypointsList.Last();
-        if (waypointExitTurn.name.ToLower().Contains("exitturn"))
+        if (waypointExitTurn.name == waypointExitTurnName)
         {
-            if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Forward)
+            if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Forward)
             {
-                if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
+                if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
-                else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, -1f, waypointExitTurn.transform);
             }
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Down)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Down)
             {
-                if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Right) // working
+                if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right) // working
                     CreateWaypoint(-1, 0f, 1f, waypointExitTurn.transform);
-                else if (ReturnPreviousPathFinderForwardDirection() == pathFinderForwardDirectionToGlobal.Left) // working
+                else if (ReturnPreviousPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left) // working
                     CreateWaypoint(1, 0f, 1f, waypointExitTurn.transform);
             }
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Right)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Right)
                 CreateWaypoint(-1f, 0f, -1f, waypointExitTurn.transform);
-            else if (ReturnForwardDirectionPathFinderIsFacing() == pathFinderForwardDirectionToGlobal.Left)
+            else if (ReturnCurrentPathFinderForwardDirection() == PathFinderForwardDirectionToGlobal.Left)
                 CreateWaypoint(1f, 0f, -1f, waypointExitTurn.transform);
         }
     }
@@ -1080,14 +1094,15 @@ public class GenerateMap : MonoBehaviour
     // called in PathFinderPhysics() to rotate the GO initially on spawn
     private void InitialPathFinderGameObjectRotation(Vector3 rotation, RaycastHit _hit, string debug)
     {
-        if (_hit.collider.name.ToLower().Contains("entrance") && !isPathFinderInitialSpawnCompleted)
+        if (_hit.collider.name == mapTileEntranceName && !isPathFinderInitialSpawnCompleted)
         {
             var disBetweenEntranceAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, entranceMapTileGO.transform.position);
             if (disBetweenEntranceAndPathFinder < 1.2f)
             {
                 isPathFinderInitialSpawnCompleted = true;
                 PathFinderMapTileGO.transform.rotation = Quaternion.Euler(rotation);
-                previousPathFinderForwardDir = ReturnForwardDirectionPathFinderIsFacing();
+                previousPathFinderForwardDir = ReturnCurrentPathFinderForwardDirection();
+                pathFinderNewDirectionChange = ReturnCurrentPathFinderForwardDirection();
                 InstantiatePrefab_MapEntranceAndExit("Entrance Arch Way", entranceMapTileGO, rotation);
             }
         }
@@ -1096,7 +1111,7 @@ public class GenerateMap : MonoBehaviour
     // called within PathFinderPhysics() - rotate the pathfinder in the correct direction
     private void PathFinderRotateTowardsExitAndCheckpoint(Vector3 rotation, RaycastHit _hit, string log)
     {
-        if (_hit.collider.name.ToLower().Contains("exit") || _hit.collider.name.ToLower().Contains("checkpoint"))
+        if (_hit.collider.name == mapTileExitName || _hit.collider.name.ToLower().Contains("checkpoint"))
         {
             isExitOrCheckpointInSightForPathFinder = true;
             //Debug.Log($"isExitOrCheckpointInSightForPathFinder: {isExitOrCheckpointInSightForPathFinder}.. @isFirstCheckpointReached: {isFirstCheckpointReached}..");
@@ -1106,13 +1121,13 @@ public class GenerateMap : MonoBehaviour
             isExitOrCheckpointInSightForPathFinder = false;
         }
 
-        if (_hit.collider.name.ToLower().Contains("exit") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
+        if (_hit.collider.name == mapTileExitName && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached && isExitOrCheckpointInSightForPathFinder) // --> find exit
         {
             Debug.Log($"Exit is in sight: {log}");
             CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder();
             isPathFinderRotatingToExit = true;
             GameObject exitTurnWaypoint = waypointsList.Last(); // get the last waypoint and rename it so we can differentiate it
-            exitTurnWaypoint.name = $"Waypoint_ExitTurn_{waypointCounter}";
+            SetGameObjectName(exitTurnWaypoint, $"{waypointExitTurnName}_{waypointCounter}");
             PathFinderMapTileGO.transform.Rotate(rotation, Space.Self);
         }
 
@@ -1127,7 +1142,7 @@ public class GenerateMap : MonoBehaviour
     private void PathFinderCheckForCollisionOfEdge(RaycastHit _hit)
     {
         // if the first checkpoint has been reached EXTRA condition check -->
-        if (_hit.collider.name.ToLower().Contains("edge") && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
+        if (_hit.collider.name == mapTileEdgeName && isPathFinderInitialSpawnCompleted && isFirstCheckpointReached)
         {
             var disBetweenEdgeAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.transform.position);
             if (disBetweenEdgeAndPathFinder < 1.2f)
@@ -1151,7 +1166,7 @@ public class GenerateMap : MonoBehaviour
 
     private (float, string) CalculateDistanceFromPathFinderToRightSideEdge(RaycastHit _hit)
     {
-        if (_hit.collider.name.ToLower().Contains("edge"))
+        if (_hit.collider.name == mapTileEdgeName)
         {
             distanceFromPathFinderToRightSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
         }
@@ -1161,7 +1176,7 @@ public class GenerateMap : MonoBehaviour
 
     private (float, string) CalculateDistanceFromPathFinderToLeftSideEdge(RaycastHit _hit)
     {
-        if (_hit.collider.name.ToLower().Contains("edge"))
+        if (_hit.collider.name == mapTileEdgeName)
         {
             distanceFromPathFinderToLeftSideEdge = Vector3.Distance(PathFinderMapTileGO.transform.position, _hit.collider.transform.position);
         }
@@ -1191,81 +1206,119 @@ public class GenerateMap : MonoBehaviour
     {
         return rayCastDirectionLeftOrRight;
     }
+    #endregion
 
-    private pathFinderForwardDirectionToGlobal ReturnForwardDirectionPathFinderIsFacing()
+    #region PathFinder directions
+    private PathFinderForwardDirectionToGlobal ReturnCurrentPathFinderForwardDirection()
     {
         Quaternion forwardDir = PathFinderMapTileGO.transform.rotation;
         var rotation = Math.Round(forwardDir.eulerAngles.y);
         if (rotation == 0f) // forward
         {
-            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Forward;
+            currentPathFinderForwardDir = PathFinderForwardDirectionToGlobal.Forward;
         }
         else if (rotation == 180f || rotation == -180f)
         {
-            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Down;
+            currentPathFinderForwardDir = PathFinderForwardDirectionToGlobal.Down;
         }
         else if (rotation == 90f)
         {
-            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Right;
+            currentPathFinderForwardDir = PathFinderForwardDirectionToGlobal.Right;
         }
         else if (rotation == -90f || rotation == 270f)
         {
-            currentPathFinderForwardDir = pathFinderForwardDirectionToGlobal.Left;
+            currentPathFinderForwardDir = PathFinderForwardDirectionToGlobal.Left;
         }
         return currentPathFinderForwardDir;
     }
 
+    float directionChangeCoolDownTimerAmount = 0.2f;
+    float directionChangeCoolDownTimerCurrent = 0;
+    bool canActivateCoolDownTimerForDirectionChange;
     // apply previous path finder gameobject position .. with a basic timer check every X seconds
-    float _timerDuration = 0.25f;
-    float _currentDuration = 0f;
-    private pathFinderForwardDirectionToGlobal ReturnPreviousPathFinderForwardDirection()
+    private PathFinderForwardDirectionToGlobal ReturnPreviousPathFinderForwardDirection()
     {
-        if (previousPathFinderForwardDir != ReturnForwardDirectionPathFinderIsFacing())
+        if (pathFinderNewDirectionChange != ReturnCurrentPathFinderForwardDirection())
         {
-            if (_currentDuration < _timerDuration)
-            {
-                _currentDuration += Time.deltaTime;
-            }
-            else if (_currentDuration > _timerDuration)
-            {
-                _currentDuration = 0f;
-                previousPathFinderForwardDir = ReturnForwardDirectionPathFinderIsFacing();
-            }
+            pathFinderDirectionHistory.Add(pathFinderNewDirectionChange.ToString());
+            pathFinderNewDirectionChange = ReturnCurrentPathFinderForwardDirection();
+            previousPathFinderForwardDir = (PathFinderForwardDirectionToGlobal)Enum.Parse(typeof(PathFinderForwardDirectionToGlobal), pathFinderDirectionHistory[pathFinderDirectionHistory.Count - 1]);
+            canActivateCoolDownTimerForDirectionChange = true;
+            directionChangeCoolDownTimerCurrent = directionChangeCoolDownTimerAmount;
         }
         return previousPathFinderForwardDir;
     }
+
+    private void CoolDownTimerForDirectionChange()
+    {
+        if (canActivateCoolDownTimerForDirectionChange)
+        {
+            if (directionChangeCoolDownTimerCurrent > 0)
+            {
+                directionChangeCoolDownTimerCurrent -= Time.deltaTime;
+            }
+            if (directionChangeCoolDownTimerCurrent < 0)
+            {
+                canActivateCoolDownTimerForDirectionChange = false;
+                previousPathFinderForwardDir = ReturnCurrentPathFinderForwardDirection();
+            }
+        }
+    }
     #endregion
 
-    #region ParentHolder for maptiles
+    #region ParentHolder for maptiles and adjustments
     // initiate gameobject holders on start() 
     private void ParentMapTileHolderCreation()
     {
         parentHolderForMapTiles = new GameObject();
-        parentHolderForMapTiles.name = "ParentHolderForMapTiles";
+        SetGameObjectName(parentHolderForMapTiles, "ParentHolderForMapTiles");
 
         GameObject _groundHolder = new GameObject(); // child 0
-        _groundHolder.name = "Ground Holder";
+        SetGameObjectName(_groundHolder, "Ground Holder");
         _groundHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
         GameObject _edgeHolder = new GameObject(); // child 1
-        _edgeHolder.name = "Edge Holder";
+        SetGameObjectName(_edgeHolder, "Edge Holder");
         _edgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
         GameObject _walkPathHolder = new GameObject(); // child 2 
-        _walkPathHolder.name = "Walk Path Holder";
+        SetGameObjectName(_walkPathHolder, "Walk Path Holder");
         _walkPathHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
         GameObject _wayPointsHolder = new GameObject(); // child 3 
-        _wayPointsHolder.name = "Waypoint Holder";
+        SetGameObjectName(_wayPointsHolder, "Waypoint Holder");
         _wayPointsHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
         GameObject _towerHolder = new GameObject(); // child 4 
-        _towerHolder.name = "Tower Holder";
+        SetGameObjectName(_towerHolder, "Tower Holder");
         _towerHolder.transform.SetParent(parentHolderForMapTiles.transform);
 
         GameObject _bridgeHolder = new GameObject(); // child 5 
-        _bridgeHolder.name = "Bridge Holder";
+        SetGameObjectName(_bridgeHolder, "Bridge Holder");
         _bridgeHolder.transform.SetParent(parentHolderForMapTiles.transform);
+    }
+
+    private void SetLastWalkTileToLastBeforeExit()
+    {
+        BoxCollider pathColl = exitMapTileGO.GetComponent<BoxCollider>();
+        // Get the bounds of the collider
+        Bounds pathBounds = pathColl.bounds;
+        // Check for colliders within the bounds of the collider
+        Collider[] overlapWithCollidersInFront = Physics.OverlapBox(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, pathBounds.extents);
+
+        foreach (Collider collider in overlapWithCollidersInFront)
+        {
+            float dis = Vector3.Distance(exitMapTileGO.transform.position, collider.transform.position);
+            if (collider.name == mapTileGroundName && dis == 1)
+            {
+                SetGameObjectName(collider.gameObject, lastMapTileWalkPathName);
+            }
+        }
+    }
+
+    private void SetGameObjectName(GameObject _gameObject, string _name)
+    {
+        _gameObject.name = _name;
     }
     #endregion
 
@@ -1290,6 +1343,8 @@ public class GenerateMap : MonoBehaviour
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // right box
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // left box
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.up / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // down box
+
+            //Gizmos.DrawWireCube(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, exitMapTileGO.GetComponent<BoxCollider>().bounds.extents); // draw box in front of the exit tile
         }
     }
 }
