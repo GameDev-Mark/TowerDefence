@@ -441,16 +441,19 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
-    // 
+    // called within ContinueMapWalkPathCreation() when left and right colliders collide with a ground tile triggers this function
+    // set amount of random chance of tower spawning.. then generates and creates tower tiles
     private int maxAmountOfTowerTiles = 20;
     private int currentAmountOfTowerTiles = 0;
-    private int maxNumberChanceOfTowerTileSpawning = 0; // out of 100 
+    private int fixedNumberForChanceOfTowerTileSpawning = 5; // between minRandomNumberForTowerTileSpawning && maxRandomNumberForTowerTileSpawning
+    private int minRandomNumberForTowerTileSpawning = 0; // min
+    private int maxRandomNumberForTowerTileSpawning = 10; // max
     private int currentRandomNumberChanceOfTowerTileSpawning = 0;
     private void GenerateAndCreateTowerTiles(GameObject _tileLeftOrRightOfPathFinder)
     {
-        currentRandomNumberChanceOfTowerTileSpawning = Random.Range(0, 100); // random number between 0 - 100
+        currentRandomNumberChanceOfTowerTileSpawning = Random.Range(minRandomNumberForTowerTileSpawning, maxRandomNumberForTowerTileSpawning); // random number
         {
-            if (currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles) // chance of tower spawning on that tile
+            if (currentRandomNumberChanceOfTowerTileSpawning > fixedNumberForChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles) // chance of tower spawning on that tile
             {
                 currentAmountOfTowerTiles++;
                 CreateTowerTile(_tileLeftOrRightOfPathFinder, currentAmountOfTowerTiles);
@@ -459,6 +462,8 @@ public class GenerateMap : MonoBehaviour
         }
     }
 
+    // called within GenerateAndCreateTowerTiles() when the appropriate measures are met
+    // this creates a tower and sets the correct information
     private void CreateTowerTile(GameObject _tileGO, int _towerTileCount)
     {
         GameObject _towerTile = GameObject.CreatePrimitive(PrimitiveType.Cube);
