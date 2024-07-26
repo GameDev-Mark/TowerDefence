@@ -21,6 +21,12 @@ public class GenerateMap : MonoBehaviour
     // entranceMapTileNumber = 71, exitMapTileNumber = 7, checkpointMapTileNumber = 56 (With edge on last tile when turning)
     /// Testing purposes : checkpoint rotating to exit -->
     // entranceMapTileNumber = 70, exitMapTileNumber = 50, checkpointMapTileNumber = 43
+    /// Testing purposes : exit turning quick
+    // Entrance number: 30 && Exit number: 51 && Checkpoint number: 43 Up to Down entrance and exit
+    // Entrance number: 94 && Exit number: 80 && Checkpoint number: 85 right to up entrance and exit
+    // Entrance number: 94 && Exit number: 51 && Checkpoint number: 43 right to Down entrance and exit
+    /// Testing purposes : exit turning quick AND false bridge creation
+    // Entrance number: 3 && Exit number: 41 && Checkpoint number: 55 
     private int entranceMapTileNumber = 0; // remove these numbers to randomize the tiles
     private int exitMapTileNumber = 0;
     private int checkpointMapTileNumber = 0;
@@ -28,7 +34,7 @@ public class GenerateMap : MonoBehaviour
 
     private List<int> tileList;
     private List<int> edgeOfMapTileList;
-    private List<int> groundMapTileList;
+    private List<int> checkpointGroundMapTileList;
 
     [Space(20), SerializeField] public List<GameObject> waypointsList;
 
@@ -50,6 +56,7 @@ public class GenerateMap : MonoBehaviour
     private GameObject PathFinderMapTileGO;
     private GameObject walkPathCheckpointMapTileGO;
     private GameObject parentHolderForMapTiles;
+    private GameObject mapTileInfrontOfEntrance;
 
     private bool isMapEntranceSpawned = false;
     private bool isMapExitSpawned = false;
@@ -61,6 +68,7 @@ public class GenerateMap : MonoBehaviour
     private bool isBridgeCurrentlyBeingCreated = false;
     private bool isPathFinderRotatingToExit = false;
     private bool hasPathFindReachedExit = false;
+    private bool isMapCompleted = false;
 
     // almost all variables for renaming tiles, etc
     private string mapTileWalkPathName = "Map tile walk path", mapTileGroundName = "Map tile ground", mapTileEntranceName = "Entrance temp",
@@ -78,10 +86,9 @@ public class GenerateMap : MonoBehaviour
         ParentMapTileHolderCreation();
         CreateMapSequentially();
     }
-
     private void FixedUpdate()
     {
-        if (isMapWalkPathCheckpointsSpawned && !hasPathFindReachedExit) PathFinderPhysics();
+        if (isMapCompleted && !hasPathFindReachedExit) PathFinderPhysics();
     }
     private void Update()
     {
@@ -109,6 +116,7 @@ public class GenerateMap : MonoBehaviour
                 FindAndCreateMapWalkPath(() =>
                 {
                     Debug.Log("@map completion done!");
+                    isMapCompleted = true;
                     SetLastWalkTileToLastBeforeExit();
                 });
             });
@@ -127,16 +135,17 @@ public class GenerateMap : MonoBehaviour
             81, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100
         };
 
-        groundMapTileList = new List<int>()
-        { 12, 13, 14, 15, 16, 17, 18, 19,
-        22, 23, 24, 25, 26, 27, 28, 28, 29,
-        32, 33, 34, 35, 36, 37, 38, 39,
-        42, 43, 44, 45, 46, 47, 48, 49,
-        52, 53, 54, 55, 56, 57, 58, 59,
-        62, 63, 64, 65, 66, 67, 68, 69,
-        72, 73, 74, 75, 76, 77, 78, 79,
-        82, 83, 84, 85, 86, 87, 88, 89
-        };
+        checkpointGroundMapTileList = new List<int>()
+        { 45, 46, 55, 56 };
+        //{ 12, 13, 14, 15, 16, 17, 18, 19,
+        //22, 23, 24, 25, 26, 27, 28, 28, 29,
+        //32, 33, 34, 35, 36, 37, 38, 39,
+        //42, 43, 44, 45, 46, 47, 48, 49,
+        //52, 53, 54, 55, 56, 57, 58, 59,
+        //62, 63, 64, 65, 66, 67, 68, 69,
+        //72, 73, 74, 75, 76, 77, 78, 79,
+        //82, 83, 84, 85, 86, 87, 88, 89
+        //};
     }
 
     // called within CreateMapSequentially() function sequence
@@ -303,6 +312,7 @@ public class GenerateMap : MonoBehaviour
 
                 if (collider.name == mapTileGroundName && dis == 1)
                 {
+                    mapTileInfrontOfEntrance = collider.gameObject;
                     GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                     SetGameObjectName(collider.gameObject, mapTileWalkPathName);
                     collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
@@ -336,7 +346,7 @@ public class GenerateMap : MonoBehaviour
                 collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
                 CreateMapTileWalls(collider.gameObject);
             }
-            else if (collider.name == lastMapTileWalkPathName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated && isPathFinderRotatingToExit)
+            else if (collider.name == lastMapTileWalkPathName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
             {
                 GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 collider.transform.SetParent(parentHolderForMapTiles.transform.GetChild(2)); // walk path holder
@@ -377,8 +387,8 @@ public class GenerateMap : MonoBehaviour
         MovePathFinderMapTileGO();
 
         // check when overlappying with path on the right or left hand side of the pathfinderGO and build the bridge accordingly and also generate tower tiles
-        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, pathBounds.extents);
-        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToRight = Physics.OverlapBox(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
+        Collider[] OverlapWithPathCollidersToLeft = Physics.OverlapBox(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, pathBounds.extents);
         foreach (Collider collider in OverlapWithPathCollidersToRight.Union(OverlapWithPathCollidersToLeft))
         {
             if (collider.name == mapTileGroundName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated) // tower tiles creation
@@ -387,13 +397,16 @@ public class GenerateMap : MonoBehaviour
             }
             if (collider.name == mapTileWalkPathName && PathFinderMapTileGO != collider.gameObject && isPathFinderRotatingToExit) // bridge creation
             {
-                if (!isBridgeCreated)
+                float disBetweenColliderAndPathFinder = Vector3.Distance(PathFinderMapTileGO.transform.position, collider.transform.position);
+                if (!isBridgeCreated && disBetweenColliderAndPathFinder == 0.5f)
                 {
                     isBridgeCurrentlyBeingCreated = true;
                     OffsetTheExitTurnWaypoint(); // offset waypoint position
                     StartCoroutine(CreateBridge(-PathFinderMapTileGO.transform.forward, 1.5f, 0f, 1f));
                     isPathFinderRotatingToExit = false;
                     CancelInvoke();
+                    Debug.Log($"Creating bridge... overlap sides");
+                    Destroy(collider.gameObject);
                     return;
                 }
             }
@@ -411,6 +424,7 @@ public class GenerateMap : MonoBehaviour
                     CreateWaypointWithOffsetToTheForwardDirectionOfPathFinder(1f, 0f, 1f);
                     StartCoroutine(CreateBridge(Vector3.zero, 1.5f, 1.5f, 1f));
                     CancelInvoke();
+                    Debug.Log($"Creating bridge... overlap front");
                     return;
                 }
             }
@@ -894,14 +908,8 @@ public class GenerateMap : MonoBehaviour
         if (checkpointMapTileNumber == 0)
         {
             // CHECKPOINT -->
-            /// TEMP FIX
-            /// Create a way to put the checkpoint in the middle of the map (specified tiles) 
-            /// Issue with applying the random number to the correct tile..
-            var specificCheckPointNums = new[] { 45, 46, 56, 56 };
-            System.Random rd = new System.Random();
-            int random = rd.Next(specificCheckPointNums.Length);
-            int createRandomCheckpointNum = specificCheckPointNums[random];
-            checkpointMapTileNumber = groundMapTileList[createRandomCheckpointNum] - 23;
+            int randomNum = Random.Range(0, checkpointGroundMapTileList.Count);
+            checkpointMapTileNumber = checkpointGroundMapTileList[randomNum];
         }
 
         // return correct tile numbers && complete Invoke()
@@ -1106,6 +1114,7 @@ public class GenerateMap : MonoBehaviour
                 previousPathFinderForwardDir = ReturnCurrentPathFinderForwardDirection();
                 pathFinderNewDirectionChange = ReturnCurrentPathFinderForwardDirection();
                 InstantiatePrefab_MapEntranceAndExit("Entrance Arch Way", entranceMapTileGO, rotation);
+                CreateMapTileWalls(mapTileInfrontOfEntrance);
             }
         }
     }
@@ -1306,9 +1315,10 @@ public class GenerateMap : MonoBehaviour
         // Get the bounds of the collider
         Bounds pathBounds = pathColl.bounds;
         // Check for colliders within the bounds of the collider
-        Collider[] overlapWithCollidersInFront = Physics.OverlapBox(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, pathBounds.extents);
+        Collider[] overlapWithCollidersInEnd1 = Physics.OverlapBox(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, pathBounds.extents);
+        Collider[] overlapWithCollidersInEnd2 = Physics.OverlapBox(exitMapTileGO.transform.position + exitMapTileGO.transform.up / 2, pathBounds.extents);
 
-        foreach (Collider collider in overlapWithCollidersInFront)
+        foreach (Collider collider in overlapWithCollidersInEnd1.Union(overlapWithCollidersInEnd2))
         {
             float dis = Vector3.Distance(exitMapTileGO.transform.position, collider.transform.position);
             if (collider.name == mapTileGroundName && dis == 1)
@@ -1342,11 +1352,12 @@ public class GenerateMap : MonoBehaviour
         if (Application.isPlaying)
         {
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.forward / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // forward box
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // right box
-            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // left box
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // right box
+            Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.right / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // left box
             Gizmos.DrawWireCube(PathFinderMapTileGO.transform.position + -PathFinderMapTileGO.transform.up / 2, PathFinderMapTileGO.GetComponent<BoxCollider>().bounds.extents); // down box
 
-            //Gizmos.DrawWireCube(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, exitMapTileGO.GetComponent<BoxCollider>().bounds.extents); // draw box in front of the exit tile
+            Gizmos.DrawWireCube(exitMapTileGO.transform.position + exitMapTileGO.transform.up / 2, exitMapTileGO.GetComponent<BoxCollider>().bounds.extents); // draw box in front of the exit tile
+            Gizmos.DrawWireCube(exitMapTileGO.transform.position + -exitMapTileGO.transform.up / 2, exitMapTileGO.GetComponent<BoxCollider>().bounds.extents); // draw box in front of the exit tile
         }
     }
 }
