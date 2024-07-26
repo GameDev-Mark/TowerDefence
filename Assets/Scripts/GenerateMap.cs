@@ -66,8 +66,7 @@ public class GenerateMap : MonoBehaviour
     private string mapTileWalkPathName = "Map tile walk path", mapTileGroundName = "Map tile ground", mapTileEntranceName = "Entrance temp",
         mapTileExitName = "Exit temp", mapTileEdgeName = "Edge temp", mapTileCheckpointName = "Checkpoint",
         towerTileName = "Tower tile", bridgeTileName = "Bridge tile", waypointName = "Waypoint", waypointExitTurnName = "Waypoint_ExitTurn",
-        lastMapTileWalkPathName = "Last map tile walk path";
-
+        lastMapTileWalkPathName = "Last map tile walk path", mapTileOppcupied = "Occupied tile";
 
     [SerializeField] LayerMask LayerMask;
 
@@ -329,7 +328,8 @@ public class GenerateMap : MonoBehaviour
 
         foreach (Collider collider in pathColliders)
         {
-            if (collider.name == mapTileGroundName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
+            if (collider.name == mapTileGroundName && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated ||
+                collider.name == mapTileOppcupied && PathFinderMapTileGO != collider.gameObject && !isBridgeCurrentlyBeingCreated)
             {
                 GenerateMapTileMaterial(collider.gameObject, "GroundTile_OffGreen_CobbleStone");
                 SetGameObjectName(collider.gameObject, mapTileWalkPathName);
@@ -442,23 +442,20 @@ public class GenerateMap : MonoBehaviour
     }
 
     // 
-    private int maxAmountOfTowerTiles = 10;
+    private int maxAmountOfTowerTiles = 20;
     private int currentAmountOfTowerTiles = 0;
-    private int maxNumberChanceOfTowerTileSpawning = 50; // out of 100 
+    private int maxNumberChanceOfTowerTileSpawning = 0; // out of 100 
     private int currentRandomNumberChanceOfTowerTileSpawning = 0;
     private void GenerateAndCreateTowerTiles(GameObject _tileLeftOrRightOfPathFinder)
     {
-        /// this function is called everytime there is an open position meaning a "ground" tile colliding next to pathfinder
-        /// how do we calculate how many towers to spawn if the path is longer or smaller? 
-        /// some sort of loop to spawn X amount of tower tiles
-        /// do some sort of chance or time check of when it is possible to to spawn a tower tile
-        /// spawn tower tile... e.g raised platform.
-        currentRandomNumberChanceOfTowerTileSpawning = Random.Range(0, 100);
-        if (currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles)
+        currentRandomNumberChanceOfTowerTileSpawning = Random.Range(0, 100); // random number between 0 - 100
         {
-            currentAmountOfTowerTiles++;
-            CreateTowerTile(_tileLeftOrRightOfPathFinder, currentAmountOfTowerTiles);
-            //Debug.Log($"Spawn tower tile.. gameobject pos: {_tileLeftOrRightOfPathFinder.name}");
+            if (currentRandomNumberChanceOfTowerTileSpawning > maxNumberChanceOfTowerTileSpawning && currentAmountOfTowerTiles <= maxAmountOfTowerTiles) // chance of tower spawning on that tile
+            {
+                currentAmountOfTowerTiles++;
+                CreateTowerTile(_tileLeftOrRightOfPathFinder, currentAmountOfTowerTiles);
+                SetGameObjectName(_tileLeftOrRightOfPathFinder, $"{mapTileOppcupied}");
+            }
         }
     }
 
