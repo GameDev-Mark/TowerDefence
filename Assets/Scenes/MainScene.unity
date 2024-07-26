@@ -841,7 +841,7 @@ GameObject:
   - component: {fileID: 1011615176}
   - component: {fileID: 1011615175}
   m_Layer: 5
-  m_Name: Button (1)
+  m_Name: SphereTower
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -910,7 +910,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1011615176}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 419197196}
+        m_TargetAssemblyTypeName: UITowerManager, Assembly-CSharp
+        m_MethodName: UIChooseATower
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Sphere
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1011615176
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1297,7 +1309,7 @@ GameObject:
   - component: {fileID: 1418869865}
   - component: {fileID: 1418869864}
   m_Layer: 5
-  m_Name: Button (3)
+  m_Name: CapsuleTower
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1366,7 +1378,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 1418869865}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 419197196}
+        m_TargetAssemblyTypeName: UITowerManager, Assembly-CSharp
+        m_MethodName: UIChooseATower
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Capsule
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &1418869865
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2025,7 +2049,7 @@ GameObject:
   - component: {fileID: 2117596966}
   - component: {fileID: 2117596965}
   m_Layer: 5
-  m_Name: Button (2)
+  m_Name: CylinderTower
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2094,7 +2118,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2117596966}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 419197196}
+        m_TargetAssemblyTypeName: UITowerManager, Assembly-CSharp
+        m_MethodName: UIChooseATower
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Cylinder
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2117596966
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2248,7 +2284,7 @@ GameObject:
   - component: {fileID: 2126289501}
   - component: {fileID: 2126289500}
   m_Layer: 5
-  m_Name: Button
+  m_Name: CubeTower
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2317,7 +2353,19 @@ MonoBehaviour:
   m_TargetGraphic: {fileID: 2126289501}
   m_OnClick:
     m_PersistentCalls:
-      m_Calls: []
+      m_Calls:
+      - m_Target: {fileID: 419197196}
+        m_TargetAssemblyTypeName: UITowerManager, Assembly-CSharp
+        m_MethodName: UIChooseATower
+        m_Mode: 5
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: Cube
+          m_BoolArgument: 0
+        m_CallState: 2
 --- !u!114 &2126289501
 MonoBehaviour:
   m_ObjectHideFlags: 0
