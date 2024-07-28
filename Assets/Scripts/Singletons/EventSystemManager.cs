@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using Object = UnityEngine.Object;
 
 public class EventSystemManager : Singleton<EventSystemManager>
 {
@@ -17,6 +19,15 @@ public class EventSystemManager : Singleton<EventSystemManager>
         if(onTriggerSceneGameReset != null)
         {
             onTriggerSceneGameReset();
+        }
+    }
+
+    public event Action<List<Object>> onTriggerResourceFolderLoaded;
+    public void TriggerResourceFolderLoaded(List<Object> listOfTowersFromResource)
+    {
+        if(onTriggerResourceFolderLoaded != null)
+        {
+            onTriggerResourceFolderLoaded(listOfTowersFromResource);
         }
     }
 }

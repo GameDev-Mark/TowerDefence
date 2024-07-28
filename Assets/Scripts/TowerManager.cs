@@ -28,7 +28,7 @@ public abstract class TowerManager : MonoBehaviour
     {
         if (!IsTowerTileOccupied())
         {
-            foreach (var child in TowerDirectory.ReturnListOfTowersFromDirectory())
+            foreach (var child in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
             {
                 if (child.name == GameManager.Instance.GetCurrentlySelectedTower())
                 {
