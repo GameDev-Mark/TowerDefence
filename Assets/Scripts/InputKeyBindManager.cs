@@ -2,23 +2,16 @@ using UnityEngine;
 
 public class InputKeyBindManager : MonoBehaviour
 {
-    SceneController sceneController;
-
-    private void Start()
+    public void Update() 
     {
-        sceneController = FindObjectOfType<SceneController>();
+        CustomInputKey();
     }
 
-    void Update()
+    private void CustomInputKey()
     {
-        SpaceBar();
-    }
-
-    private void SpaceBar()
-    {
-        if (Input.GetKeyDown(KeyCode.Space))
+        if(Input.GetKeyDown(KeyCode.Space))
         {
-            sceneController.ResetScene(); // reset scene
+            EventSystemManager.Instance.TriggerSceneGameReset();
         }
     }
 }

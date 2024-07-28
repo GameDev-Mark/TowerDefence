@@ -6,6 +6,11 @@ using UnityEngine.SceneManagement;
 
 public class SceneController : MonoBehaviour
 {
+    private void Start()
+    {
+        EventSystemManager.Instance.onTriggerSceneGameReset += ResetScene;    
+    }
+
     // called from InputKeyBindManager.cs 
     public void ResetScene()
     {

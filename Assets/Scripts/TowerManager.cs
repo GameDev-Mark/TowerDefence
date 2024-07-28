@@ -11,14 +11,15 @@ public abstract class TowerManager : MonoBehaviour
     private void OnMouseOver()
     {
         TowerVisualWhenHovering();
+        //Debug.Log($"On mouse HOVERING.. towerManager.cs");
     }
     private void OnMouseExit()
     {
         TowerVisualWhenHoveringIsDone();
     }
-    private void OnMouseEnter()
+    public void OnMouseEnter()
     {
-        
+        //Debug.Log($"On mouse enter.. towerManager.cs");
     }
     #endregion
 
@@ -29,11 +30,11 @@ public abstract class TowerManager : MonoBehaviour
         {
             foreach (var child in TowerDirectory.ReturnListOfTowersFromDirectory())
             {
-                if (child.name == FindObjectOfType<UITowerManager>().TowerName())
+                if (child.name == GameManager.Instance.GetCurrentlySelectedTower())
                 {
                     GameObject _tower = Instantiate(child) as GameObject;
                     CreateGameObjectInfo(_tower, gameObject);
-                    FindObjectOfType<UITowerManager>().ResetTowerInfo();
+                    EventSystemManager.Instance.TriggerCurrentTower(null);
                     StartCoroutine(TowerVisualWhenClickedOn());
                 }
             }
@@ -86,13 +87,13 @@ public abstract class TowerManager : MonoBehaviour
             GetTowerRenderer().material.color = Color.white;
         else
             GetTowerRenderer().material.color = Color.gray;
-            
+
     }
     #endregion
 
     #region Public individual tower functionality
-    public abstract bool IsTowerTileOccupied();
+    protected abstract bool IsTowerTileOccupied();
 
-    public abstract void OccupyTile();
+    protected abstract void OccupyTile();
     #endregion
 }
