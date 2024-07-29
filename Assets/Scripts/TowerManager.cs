@@ -3,10 +3,12 @@ using UnityEngine;
 
 public abstract class TowerManager : MonoBehaviour
 {
+    private Renderer _towerTileChildTowerRenderer;
+
     #region Mouse clicks
     private void OnMouseDown()
     {
-        LoopThroughTowerListAndInstaniateCorrectTower();
+        ClickOnTowerTile();
     }
     private void OnMouseOver()
     {
@@ -23,20 +25,32 @@ public abstract class TowerManager : MonoBehaviour
     }
     #endregion
 
-    #region Tower creation
-    private void LoopThroughTowerListAndInstaniateCorrectTower()
+    #region
+    private void ClickOnTowerTile()
     {
         if (!IsTowerTileOccupied())
         {
-            foreach (var child in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
+            LoopThroughTowerListAndInstaniateCorrectTower();
+            //StartCoroutine(TowerVisualWhenClickedOn(Color.white, Color.black, Color.white));
+        }
+        else
+        {
+            //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
+        }
+    }
+    #endregion
+
+    #region Tower creation
+    private void LoopThroughTowerListAndInstaniateCorrectTower()
+    {
+        foreach (var child in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
+        {
+            if (child.name == GameManager.Instance.GetCurrentlySelectedTower())
             {
-                if (child.name == GameManager.Instance.GetCurrentlySelectedTower())
-                {
-                    GameObject _tower = Instantiate(child) as GameObject;
-                    CreateGameObjectInfo(_tower, gameObject);
-                    EventSystemManager.Instance.TriggerCurrentTower(null);
-                    StartCoroutine(TowerVisualWhenClickedOn());
-                }
+                GameObject _tower = Instantiate(child) as GameObject;
+                CreateGameObjectInfo(_tower, gameObject);
+                EventSystemManager.Instance.TriggerCurrentTower(null);
+                _towerTileChildTowerRenderer = gameObject.transform.GetChild(0).GetComponent<Renderer>();
             }
         }
     }
@@ -66,28 +80,43 @@ public abstract class TowerManager : MonoBehaviour
     #endregion
 
     #region Tower visuals
-    private IEnumerator TowerVisualWhenClickedOn()
+    private IEnumerator TowerVisualWhenClickedOn(Color _initClick, Color _changeTo, Color _initClickColor)
     {
-        GetTowerRenderer().material.color = Color.gray;
+        GetTowerRenderer().material.color = _initClick;
         yield return new WaitForSeconds(0.05f);
-        GetTowerRenderer().material.color = Color.black;
+        GetTowerRenderer().material.color = _changeTo;
         yield return new WaitForSeconds(0.15f);
-        GetTowerRenderer().material.color = Color.gray;
+        GetTowerRenderer().material.color = _initClickColor;
         yield return null;
     }
 
     private void TowerVisualWhenHovering()
     {
         GetTowerRenderer().material.color = Color.yellow;
+
+        if (GetChildTowerMaterialInTowerTile() != null)
+            GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
     }
 
     private void TowerVisualWhenHoveringIsDone()
     {
         if (!IsTowerTileOccupied())
+        {
             GetTowerRenderer().material.color = Color.white;
+            if (GetChildTowerMaterialInTowerTile() != null)
+                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
+        }
         else
+        {
             GetTowerRenderer().material.color = Color.gray;
+            if (GetChildTowerMaterialInTowerTile() != null)
+                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
+        }
+    }
 
+    private Renderer GetChildTowerMaterialInTowerTile()
+    {
+        return _towerTileChildTowerRenderer;
     }
     #endregion
 
