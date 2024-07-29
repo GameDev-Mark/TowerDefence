@@ -1,4 +1,4 @@
-public class TowerPlacement : TowerManager
+public class TowerStatsAndInfo : TowerManager
 {
     private bool isTowerTileOccupied = false;
 

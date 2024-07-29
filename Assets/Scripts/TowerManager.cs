@@ -49,7 +49,7 @@ public abstract class TowerManager : MonoBehaviour
         _tower.transform.rotation = Quaternion.identity;
         _tower.transform.localScale = Vector3.one / 2f;
         GenerateTowerMaterial(_tower, "BridgeTile_CobbleStone");
-        _towerTile.GetComponent<TowerPlacement>().OccupyTile();
+        _towerTile.GetComponent<TowerStatsAndInfo>().OccupyTile();
     }
 
     private void GenerateTowerMaterial(GameObject _towerGO, string resourceName)
