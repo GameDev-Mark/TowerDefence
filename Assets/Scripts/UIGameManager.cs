@@ -4,17 +4,20 @@ using UnityEngine.UI;
 public class UIGameManager : MonoBehaviour
 {
     private GameObject towerSprite;
+    private GameObject towerGroupContainer;
 
-    public Animator uiTowerManagerAnimator;
+    public Animator uiTowerMenuAnimator;
 
     #region Unity Functions
     private void Awake()
     {
         CreateTowerSpriteIcon();
-        uiTowerManagerAnimator = GetComponentInChildren<Animator>();
+        uiTowerMenuAnimator = GetComponentInChildren<Animator>();
+        towerGroupContainer = uiTowerMenuAnimator.transform.GetChild(1).gameObject;
     }
     private void Start()
     {
+        AddOnClickEventToTowerButtons();
         EventSystemManager.Instance.onTriggerCurrentTower += SubscribeToTowerSelection;
     }
     private void Update()
@@ -75,6 +78,24 @@ public class UIGameManager : MonoBehaviour
     }
     #endregion
 
+    #region Tower Button Info
+    private void AddOnClickEventToTowerButtons()
+    {
+        foreach(Transform child in towerGroupContainer.transform)
+        {
+            child.GetComponent<Button>().onClick.AddListener(delegate { OnPointerDown(child.gameObject); });
+            Debug.Log($"child: {child.name}");
+        }
+    }
+
+    public void OnPointerDown(GameObject _towerButtonClicked)
+    {
+        UITowerInfo towerInfo = _towerButtonClicked.GetComponent<UITowerInfo>();
+        Debug.Log($"TowerInfo.TowerName(): {towerInfo.TowerName()}...");
+        EventSystemManager.Instance.TriggerCurrentTower(towerInfo.TowerName());
+    }
+    #endregion
+
     #region event triggers
     private void SubscribeToTowerSelection(string _towerName)
     {
@@ -86,10 +107,10 @@ public class UIGameManager : MonoBehaviour
     #region Button events
     public void UIExpandOrShrinkTowerMenu() // attached the UI expand and shrink tower menu button
     {
-        if (uiTowerManagerAnimator.GetBool("isTowerMenuOpen"))
-            uiTowerManagerAnimator.SetBool("isTowerMenuOpen", false);
+        if (uiTowerMenuAnimator.GetBool("isTowerMenuOpen"))
+            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", false);
         else
-            uiTowerManagerAnimator.SetBool("isTowerMenuOpen", true);
+            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", true);
     }
     #endregion
 }

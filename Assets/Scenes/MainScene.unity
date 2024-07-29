@@ -2365,7 +2365,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1564fb5fe65f244ebcceecc7f4f267d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  uiTowerManagerAnimator: {fileID: 0}
+  uiTowerMenuAnimator: {fileID: 0}
 --- !u!1 &2126289498
 GameObject:
   m_ObjectHideFlags: 0
