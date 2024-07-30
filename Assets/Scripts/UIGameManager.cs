@@ -84,14 +84,12 @@ public class UIGameManager : MonoBehaviour
         foreach(Transform child in towerGroupContainer.transform)
         {
             child.GetComponent<Button>().onClick.AddListener(delegate { OnPointerDown(child.gameObject); });
-            Debug.Log($"child: {child.name}");
         }
     }
 
     public void OnPointerDown(GameObject _towerButtonClicked)
     {
         UITowerInfo towerInfo = _towerButtonClicked.GetComponent<UITowerInfo>();
-        Debug.Log($"TowerInfo.TowerName(): {towerInfo.TowerName()}...");
         EventSystemManager.Instance.TriggerCurrentTower(towerInfo.TowerName());
     }
     #endregion
