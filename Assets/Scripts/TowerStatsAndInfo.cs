@@ -1,14 +1,14 @@
 public class TowerStatsAndInfo : TowerManager
 {
-    private bool isTowerTileOccupied = false;
+    public override string TowerName() { return towerName; }
 
-    protected override void OccupyTile()
-    {
-        if (!isTowerTileOccupied) { isTowerTileOccupied = true; }
-    }
+    public override string TowerDescription() { return towerDescription; }
 
-    protected override bool IsTowerTileOccupied()
-    {
-        return isTowerTileOccupied;
-    }
+    public override int AttackDamage() { return attackDamage; }
+
+    public override int AttackRange() { return attackRange; }
+
+    public override float AttackSpeed() { return attackSpeed; }
+
+    public override TypeOfTower TowerType() { return typeOfTower; }
 }

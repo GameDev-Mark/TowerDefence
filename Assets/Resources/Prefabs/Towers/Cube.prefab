@@ -11,6 +11,7 @@ GameObject:
   - component: {fileID: 572791151758055883}
   - component: {fileID: 1286037120381191938}
   - component: {fileID: 1197684107688545344}
+  - component: {fileID: -5707682722898683032}
   m_Layer: 0
   m_Name: Cube
   m_TagString: Untagged
@@ -83,3 +84,21 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!114 &-5707682722898683032
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7277772460013209253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 67740a458bffec642858cc28fb64c0e2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  towerName: Cube Tower
+  towerDescription: 
+  attackDamage: 0
+  attackRange: 0
+  attackSpeed: 0.79
+  typeOfTower: 2

@@ -1,5 +1,7 @@
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class UIGameManager : MonoBehaviour
 {
@@ -17,8 +19,8 @@ public class UIGameManager : MonoBehaviour
     }
     private void Start()
     {
-        AddOnClickEventToTowerButtons();
         EventSystemManager.Instance.onTriggerCurrentTower += SubscribeToTowerSelection;
+        LoadUITowerButtons();
     }
     private void Update()
     {
@@ -79,18 +81,44 @@ public class UIGameManager : MonoBehaviour
     #endregion
 
     #region Tower Button Info
-    private void AddOnClickEventToTowerButtons()
+    private void LoadUITowerButtons()
     {
-        foreach(Transform child in towerGroupContainer.transform)
+        foreach (var resourceTower in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
         {
-            child.GetComponent<Button>().onClick.AddListener(delegate { OnPointerDown(child.gameObject); });
+            GameObject _towerButt = Instantiate(Resources.Load("Prefabs/UI/TowerButtonTemplate") as GameObject);
+            _towerButt.name = resourceTower.name;
+            _towerButt.GetComponentInChildren<TMP_Text>().text = _towerButt.name;
+            _towerButt.transform.SetParent(towerGroupContainer.transform);
+            _towerButt.transform.localScale = Vector3.one;
+
+            ApplyUITowerButtonStats(resourceTower, _towerButt);
         }
     }
 
-    public void OnPointerDown(GameObject _towerButtonClicked)
+    private void ApplyUITowerButtonStats(Object _resourceTower, GameObject _towerButton)
     {
-        UITowerInfo towerInfo = _towerButtonClicked.GetComponent<UITowerInfo>();
-        EventSystemManager.Instance.TriggerCurrentTower(towerInfo.TowerName());
+        TowerStatsAndInfo freshTowerStatScript = _towerButton.AddComponent<TowerStatsAndInfo>();
+        TowerStatsAndInfo getResourceTowerStatsScript = _resourceTower.GetComponent<TowerStatsAndInfo>();
+
+        freshTowerStatScript.towerName = getResourceTowerStatsScript.TowerName();
+        freshTowerStatScript.towerDescription = getResourceTowerStatsScript.TowerDescription();
+        freshTowerStatScript.attackDamage = getResourceTowerStatsScript.AttackDamage();
+        freshTowerStatScript.attackRange = getResourceTowerStatsScript.AttackRange();
+        freshTowerStatScript.attackSpeed = getResourceTowerStatsScript.AttackSpeed();
+        freshTowerStatScript.typeOfTower = getResourceTowerStatsScript.TowerType();
+
+        AddOnClickEventToTowerButtons(_towerButton);
+    }
+
+    private void AddOnClickEventToTowerButtons(GameObject _towerButton)
+    {
+        _towerButton.GetComponent<Button>().onClick.AddListener(delegate { OnPointerDown(_towerButton.gameObject); });
+    }
+
+    private void OnPointerDown(GameObject _towerButtonClicked)
+    {
+        TowerStatsAndInfo towerStats = _towerButtonClicked.GetComponent<TowerStatsAndInfo>();
+        EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
     }
     #endregion
 

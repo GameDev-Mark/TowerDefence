@@ -1,128 +1,23 @@
-using System.Collections;
 using UnityEngine;
 
 public abstract class TowerManager : MonoBehaviour
 {
-    private Renderer _towerTileChildTowerRenderer;
+    [Header("Tower Info")]
+    public string towerName;
+    [TextArea] public string towerDescription;
 
-    #region Mouse clicks
-    private void OnMouseDown()
-    {
-        ClickOnTowerTile();
-    }
-    private void OnMouseOver()
-    {
-        TowerVisualWhenHovering();
-        //Debug.Log($"On mouse HOVERING.. towerManager.cs");
-    }
-    private void OnMouseExit()
-    {
-        TowerVisualWhenHoveringIsDone();
-    }
-    public void OnMouseEnter()
-    {
-        //Debug.Log($"On mouse enter.. towerManager.cs");
-    }
-    #endregion
+    [Header("Attack stats"), Space(10)]
+    public int attackDamage;
+    public int attackRange;
+    public float attackSpeed;
+    public TypeOfTower typeOfTower;
 
-    #region
-    private void ClickOnTowerTile()
-    {
-        if (!IsTowerTileOccupied())
-        {
-            LoopThroughTowerListAndInstaniateCorrectTower();
-            //StartCoroutine(TowerVisualWhenClickedOn(Color.white, Color.black, Color.white));
-        }
-        else
-        {
-            //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
-        }
-    }
-    #endregion
+    [HideInInspector] public enum TypeOfTower { NONE, SAUCE, CHEESY, PEPPORNI, PINEAPPLE }
 
-    #region Tower creation
-    private void LoopThroughTowerListAndInstaniateCorrectTower()
-    {
-        foreach (var child in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
-        {
-            if (child.name == GameManager.Instance.GetCurrentlySelectedTower())
-            {
-                GameObject _tower = Instantiate(child) as GameObject;
-                CreateGameObjectInfo(_tower, gameObject);
-                EventSystemManager.Instance.TriggerCurrentTower(null);
-                _towerTileChildTowerRenderer = gameObject.transform.GetChild(0).GetComponent<Renderer>();
-            }
-        }
-    }
-
-    private void CreateGameObjectInfo(GameObject _tower, GameObject _towerTile)
-    {
-        _tower.name = $"Tower_{_tower.name}";
-        _tower.transform.SetParent(_towerTile.transform);
-        _tower.transform.position = new Vector3(_towerTile.transform.position.x, 1.5f, _towerTile.transform.position.z);
-        _tower.transform.rotation = Quaternion.identity;
-        _tower.transform.localScale = Vector3.one / 2f;
-        GenerateTowerMaterial(_tower, "BridgeTile_CobbleStone");
-        _towerTile.GetComponent<TowerStatsAndInfo>().OccupyTile();
-    }
-
-    private void GenerateTowerMaterial(GameObject _towerGO, string resourceName)
-    {
-        Renderer _rend = _towerGO.GetComponent<Renderer>();
-        _rend.material = Resources.Load($"Materials/{resourceName}") as Material;
-        GetTowerRenderer().material = _rend.material;
-    }
-
-    private Renderer GetTowerRenderer()
-    {
-        return gameObject.GetComponent<Renderer>();
-    }
-    #endregion
-
-    #region Tower visuals
-    private IEnumerator TowerVisualWhenClickedOn(Color _initClick, Color _changeTo, Color _initClickColor)
-    {
-        GetTowerRenderer().material.color = _initClick;
-        yield return new WaitForSeconds(0.05f);
-        GetTowerRenderer().material.color = _changeTo;
-        yield return new WaitForSeconds(0.15f);
-        GetTowerRenderer().material.color = _initClickColor;
-        yield return null;
-    }
-
-    private void TowerVisualWhenHovering()
-    {
-        GetTowerRenderer().material.color = Color.yellow;
-
-        if (GetChildTowerMaterialInTowerTile() != null)
-            GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
-    }
-
-    private void TowerVisualWhenHoveringIsDone()
-    {
-        if (!IsTowerTileOccupied())
-        {
-            GetTowerRenderer().material.color = Color.white;
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
-        }
-        else
-        {
-            GetTowerRenderer().material.color = Color.gray;
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
-        }
-    }
-
-    private Renderer GetChildTowerMaterialInTowerTile()
-    {
-        return _towerTileChildTowerRenderer;
-    }
-    #endregion
-
-    #region Public individual tower functionality
-    protected abstract bool IsTowerTileOccupied();
-
-    protected abstract void OccupyTile();
-    #endregion
+    public abstract string TowerName();
+    public abstract string TowerDescription();
+    public abstract int AttackDamage();
+    public abstract int AttackRange();
+    public abstract float AttackSpeed();
+    public abstract TypeOfTower TowerType();
 }
