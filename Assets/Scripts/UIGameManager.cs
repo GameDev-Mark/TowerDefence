@@ -46,7 +46,7 @@ public class UIGameManager : MonoBehaviour
     }
     #endregion
 
-    #region Tower information
+    #region Tower Icon information
     private void CreateTowerSpriteIcon()
     {
         if (towerSprite == null)
@@ -80,7 +80,7 @@ public class UIGameManager : MonoBehaviour
     }
     #endregion
 
-    #region Tower Button Info
+    #region Tower Buttons creation information
     private void LoadUITowerButtons()
     {
         foreach (var resourceTower in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
@@ -120,6 +120,10 @@ public class UIGameManager : MonoBehaviour
         TowerStatsAndInfo towerStats = _towerButtonClicked.GetComponent<TowerStatsAndInfo>();
         EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
     }
+    #endregion
+
+    #region UI tower pop up menu 
+    
     #endregion
 
     #region event triggers
