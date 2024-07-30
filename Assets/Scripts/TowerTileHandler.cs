@@ -83,10 +83,20 @@ public class TowerTileHandler : MonoBehaviour
 
     private void TowerVisualWhenHovering()
     {
-        GetTowerRenderer().material.color = Color.yellow;
+        if (!IsTowerTileOccupied())
+        {
+            GetTowerRenderer().material.color = Color.yellow;
 
-        if (GetChildTowerMaterialInTowerTile() != null)
-            GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
+            if (GetChildTowerMaterialInTowerTile() != null)
+                GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
+        }
+        else
+        {
+            GetTowerRenderer().material.color = Color.green;
+
+            if (GetChildTowerMaterialInTowerTile() != null)
+                GetChildTowerMaterialInTowerTile().material.color = Color.green;
+        }
     }
 
     private void TowerVisualWhenHoveringIsDone()
