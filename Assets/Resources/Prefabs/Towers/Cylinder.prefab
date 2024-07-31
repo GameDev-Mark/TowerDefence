@@ -97,8 +97,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerName: Cylinder Tower
-  towerDescription: 
-  attackDamage: 0
-  attackRange: 0
-  attackSpeed: 0
+  towerDescription: meh
+  attackDamage: 3
+  attackRange: 9
+  attackSpeed: 0.15
   typeOfTower: 3

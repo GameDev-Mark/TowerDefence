@@ -97,8 +97,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerName: Cube Tower
-  towerDescription: 
-  attackDamage: 0
-  attackRange: 0
+  towerDescription: The box
+  attackDamage: 2
+  attackRange: 6
   attackSpeed: 0.79
   typeOfTower: 2

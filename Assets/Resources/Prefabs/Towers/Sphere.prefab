@@ -97,8 +97,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerName: Sphere Tower
-  towerDescription: 
-  attackDamage: 0
+  towerDescription: SPEHEREICAL tower
+  attackDamage: 3
   attackRange: 8
   attackSpeed: 0.63
-  typeOfTower: 1
+  typeOfTower: 4

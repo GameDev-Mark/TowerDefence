@@ -97,8 +97,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   towerName: Capsule Tower
-  towerDescription: 
-  attackDamage: 0
-  attackRange: 0
+  towerDescription: Pill shaped..
+  attackDamage: 4
+  attackRange: 3
   attackSpeed: 0.88
   typeOfTower: 1

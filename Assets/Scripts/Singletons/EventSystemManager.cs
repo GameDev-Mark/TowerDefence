@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using Object = UnityEngine.Object;
 
 public class EventSystemManager : Singleton<EventSystemManager>
@@ -13,12 +14,12 @@ public class EventSystemManager : Singleton<EventSystemManager>
         }
     }
 
-    public event Action onTriggerTowerTileClick;
-    public void TriggerTowerTileClick()
+    public event Action<GameObject> onTriggerTowerTileClick;
+    public void TriggerTowerTileClick(GameObject _towerTileClickedOn)
     {
         if (onTriggerTowerTileClick != null)
         {
-            onTriggerTowerTileClick();
+            onTriggerTowerTileClick(_towerTileClickedOn);
         }
     }
 

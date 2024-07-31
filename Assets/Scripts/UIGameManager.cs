@@ -18,13 +18,13 @@ public class UIGameManager : MonoBehaviour
         CreateTowerSpriteIcon();
         SetupTowerMenuAnimationInfo();
         SetupTowerPopupMenuInfo();
-        
+
         towerGroupContainer = uiTowerMenuAnimator.transform.GetChild(1).gameObject;
     }
     private void Start()
     {
         EventSystemManager.Instance.onTriggerCurrentTower += SubscribeToTowerSelection;
-        EventSystemManager.Instance.onTriggerTowerTileClick += ActivateTowerPopupMenu;
+        EventSystemManager.Instance.onTriggerTowerTileClick += SubscribeToTowerTileClickedOn;
         LoadUITowerButtons();
     }
     private void Update()
@@ -86,7 +86,7 @@ public class UIGameManager : MonoBehaviour
     #endregion
 
     #region Tower Buttons creation information
-    private void LoadUITowerButtons()
+    private void LoadUITowerButtons() // this gets loaded at the start()
     {
         foreach (var resourceTower in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
         {
@@ -100,7 +100,7 @@ public class UIGameManager : MonoBehaviour
         }
     }
 
-    private void ApplyUITowerButtonStats(Object _resourceTower, GameObject _towerButton)
+    private void ApplyUITowerButtonStats(Object _resourceTower, GameObject _towerButton) // applied from the start()
     {
         TowerStatsAndInfo freshTowerStatScript = _towerButton.AddComponent<TowerStatsAndInfo>();
         TowerStatsAndInfo getResourceTowerStatsScript = _resourceTower.GetComponent<TowerStatsAndInfo>();
@@ -123,6 +123,38 @@ public class UIGameManager : MonoBehaviour
         towerTileTowerInfoGO = transform.Find("TowerTileTowerInfo").gameObject;
         towerTileTowerInfoGO.SetActive(false);
         AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject);
+    }
+
+    private void ActivateTowerPopupMenu()
+    {
+        towerTileTowerInfoGO.SetActive(true);
+        towerTileTowerInfoGO.transform.position = Input.mousePosition + new Vector3(100, 95);
+    }
+
+    private void ShowCorrectTowerStatsOnTowerPopup(GameObject _towerTileClickedOn)
+    {
+        TowerStatsAndInfo _towerStats = _towerTileClickedOn.GetComponentInChildren<TowerStatsAndInfo>();
+        GameObject _towerInfoContainer = towerTileTowerInfoGO.transform.Find("TowerStatsContainer").gameObject;
+        int childLoopCount = 0;
+        foreach (Transform child in _towerInfoContainer.transform)
+        {
+            if (child.GetComponentInChildren<TMP_Text>())
+            {
+                if (childLoopCount == 0)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Tower Name\n{_towerStats.TowerName()}";
+                if (childLoopCount == 1)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Description\n{_towerStats.TowerDescription()}";
+                if (childLoopCount == 2)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Damage\n{_towerStats.AttackDamage()}";
+                if (childLoopCount == 3)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Range\n{_towerStats.AttackRange()}";
+                if (childLoopCount == 4)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Speed\n{_towerStats.AttackSpeed()}";
+                if (childLoopCount == 5)
+                    child.GetComponentInChildren<TMP_Text>().text = $"Tower Type\n{_towerStats.TowerType()}";
+                childLoopCount++;
+            }
+        }
     }
     #endregion
 
@@ -150,10 +182,10 @@ public class UIGameManager : MonoBehaviour
         DeactivateTowerSpriteIcon(_towerName);
     }
 
-    private void ActivateTowerPopupMenu()
+    private void SubscribeToTowerTileClickedOn(GameObject _towerTileClickedOn)
     {
-        towerTileTowerInfoGO.SetActive(true);
-        towerTileTowerInfoGO.transform.position = Input.mousePosition + new Vector3(100, 95);
+        ActivateTowerPopupMenu();
+        ShowCorrectTowerStatsOnTowerPopup(_towerTileClickedOn);
     }
     #endregion
 
@@ -174,7 +206,7 @@ public class UIGameManager : MonoBehaviour
         {
             towerTileTowerInfoGO.SetActive(false);
         }
-        if(_buttonClicked.name == expandOrShrinkTowerMenuButton.name)
+        if (_buttonClicked.name == expandOrShrinkTowerMenuButton.name)
         {
             UIExpandOrShrinkTowerMenu();
         }
