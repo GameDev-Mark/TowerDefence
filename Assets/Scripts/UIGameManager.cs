@@ -7,19 +7,24 @@ public class UIGameManager : MonoBehaviour
 {
     private GameObject towerSprite;
     private GameObject towerGroupContainer;
+    private GameObject towerTileTowerInfoGO;
+    private GameObject expandOrShrinkTowerMenuButton;
 
-    public Animator uiTowerMenuAnimator;
+    private Animator uiTowerMenuAnimator;
 
     #region Unity Functions
     private void Awake()
     {
         CreateTowerSpriteIcon();
-        uiTowerMenuAnimator = GetComponentInChildren<Animator>();
+        SetupTowerMenuAnimationInfo();
+        SetupTowerPopupMenuInfo();
+        
         towerGroupContainer = uiTowerMenuAnimator.transform.GetChild(1).gameObject;
     }
     private void Start()
     {
         EventSystemManager.Instance.onTriggerCurrentTower += SubscribeToTowerSelection;
+        EventSystemManager.Instance.onTriggerTowerTileClick += ActivateTowerPopupMenu;
         LoadUITowerButtons();
     }
     private void Update()
@@ -107,23 +112,35 @@ public class UIGameManager : MonoBehaviour
         freshTowerStatScript.attackSpeed = getResourceTowerStatsScript.AttackSpeed();
         freshTowerStatScript.typeOfTower = getResourceTowerStatsScript.TowerType();
 
-        AddOnClickEventToTowerButtons(_towerButton);
+        AddOnClickListenerToButton(_towerButton);
     }
 
-    private void AddOnClickEventToTowerButtons(GameObject _towerButton)
-    {
-        _towerButton.GetComponent<Button>().onClick.AddListener(delegate { OnPointerDown(_towerButton.gameObject); });
-    }
-
-    private void OnPointerDown(GameObject _towerButtonClicked)
-    {
-        TowerStatsAndInfo towerStats = _towerButtonClicked.GetComponent<TowerStatsAndInfo>();
-        EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
-    }
     #endregion
 
     #region UI tower pop up menu 
-    
+    private void SetupTowerPopupMenuInfo()
+    {
+        towerTileTowerInfoGO = transform.Find("TowerTileTowerInfo").gameObject;
+        towerTileTowerInfoGO.SetActive(false);
+        AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject);
+    }
+    #endregion
+
+    #region TowerMenu animation info
+    private void SetupTowerMenuAnimationInfo()
+    {
+        uiTowerMenuAnimator = GetComponentInChildren<Animator>();
+        expandOrShrinkTowerMenuButton = uiTowerMenuAnimator.transform.GetChild(2).GetChild(1).gameObject;
+        AddOnClickListenerToButton(expandOrShrinkTowerMenuButton);
+    }
+
+    public void UIExpandOrShrinkTowerMenu() // attached the UI expand and shrink tower menu button
+    {
+        if (uiTowerMenuAnimator.GetBool("isTowerMenuOpen"))
+            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", false);
+        else
+            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", true);
+    }
     #endregion
 
     #region event triggers
@@ -132,15 +149,35 @@ public class UIGameManager : MonoBehaviour
         ActivateTowerSpriteIcon(_towerName);
         DeactivateTowerSpriteIcon(_towerName);
     }
+
+    private void ActivateTowerPopupMenu()
+    {
+        towerTileTowerInfoGO.SetActive(true);
+        towerTileTowerInfoGO.transform.position = Input.mousePosition + new Vector3(100, 95);
+    }
     #endregion
 
     #region Button events
-    public void UIExpandOrShrinkTowerMenu() // attached the UI expand and shrink tower menu button
+    private void AddOnClickListenerToButton(GameObject _buttonGO)
     {
-        if (uiTowerMenuAnimator.GetBool("isTowerMenuOpen"))
-            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", false);
-        else
-            uiTowerMenuAnimator.SetBool("isTowerMenuOpen", true);
+        _buttonGO.GetComponent<Button>().onClick.AddListener(delegate { ButtonClicks(_buttonGO.gameObject); });
+    }
+
+    private void ButtonClicks(GameObject _buttonClicked)
+    {
+        if (_buttonClicked.GetComponent<TowerStatsAndInfo>())
+        {
+            TowerStatsAndInfo towerStats = _buttonClicked.GetComponent<TowerStatsAndInfo>();
+            EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
+        }
+        if (_buttonClicked.transform.parent.name == towerTileTowerInfoGO.name)
+        {
+            towerTileTowerInfoGO.SetActive(false);
+        }
+        if(_buttonClicked.name == expandOrShrinkTowerMenuButton.name)
+        {
+            UIExpandOrShrinkTowerMenu();
+        }
     }
     #endregion
 }

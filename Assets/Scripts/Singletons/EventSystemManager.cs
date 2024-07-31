@@ -13,6 +13,15 @@ public class EventSystemManager : Singleton<EventSystemManager>
         }
     }
 
+    public event Action onTriggerTowerTileClick;
+    public void TriggerTowerTileClick()
+    {
+        if (onTriggerTowerTileClick != null)
+        {
+            onTriggerTowerTileClick();
+        }
+    }
+
     public event Action onTriggerSceneGameReset;
     public void TriggerSceneGameReset()
     {

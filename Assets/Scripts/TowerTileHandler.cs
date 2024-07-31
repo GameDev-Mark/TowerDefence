@@ -37,6 +37,7 @@ public class TowerTileHandler : MonoBehaviour
         }
         else
         {
+            EventSystemManager.Instance.TriggerTowerTileClick();
             //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
         }
     }
