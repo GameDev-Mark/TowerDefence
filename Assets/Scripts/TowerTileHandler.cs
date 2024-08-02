@@ -104,17 +104,17 @@ public class TowerTileHandler : MonoBehaviour
     {
         if (!IsTowerTileOccupied())
         {
-            GetTowerRenderer().material.color = Color.yellow;
-
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
-        }
-        else
-        {
             GetTowerRenderer().material.color = Color.green;
 
             if (GetChildTowerMaterialInTowerTile() != null)
                 GetChildTowerMaterialInTowerTile().material.color = Color.green;
+        }
+        else
+        {
+            GetTowerRenderer().material.color = Color.yellow;
+
+            if (GetChildTowerMaterialInTowerTile() != null)
+                GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
         }
     }
 
