@@ -36,6 +36,11 @@ public class UIGameManager : MonoBehaviour
         UpdateTowerImageSpritePosition();
         CancelTowerClick();
     }
+    private void OnDestroy()
+    {
+        EventSystemManager.Instance.onTriggerCurrentTower -= SubscribeToTowerSelection;
+        EventSystemManager.Instance.onTriggerTowerTileClick -= SubscribeToTowerTileClickedOn;
+    }
     #endregion
 
     #region Update functionality
