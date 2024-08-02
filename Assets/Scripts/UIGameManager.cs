@@ -11,6 +11,8 @@ public class UIGameManager : MonoBehaviour
     private GameObject towerTileTowerInfoGO;
     private GameObject expandOrShrinkTowerMenuButton;
     private GameObject currentlySelectedTowerTile;
+    private GameObject closeButtonOnTowerTileUI;
+    private GameObject sellButtonOnTowerTileUI;
 
     private Animator uiTowerMenuAnimator;
 
@@ -124,8 +126,12 @@ public class UIGameManager : MonoBehaviour
     {
         towerTileTowerInfoGO = transform.Find("TowerTileTowerInfo").gameObject;
         towerTileTowerInfoGO.SetActive(false);
-        AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject);
-        AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("SellButton").gameObject);
+
+        closeButtonOnTowerTileUI = towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject;
+        sellButtonOnTowerTileUI = towerTileTowerInfoGO.transform.Find("SellButton").gameObject;
+
+        AddOnClickListenerToButton(closeButtonOnTowerTileUI);
+        AddOnClickListenerToButton(sellButtonOnTowerTileUI);
     }
 
     private void ActivateTowerPopupMenu()
@@ -221,11 +227,12 @@ public class UIGameManager : MonoBehaviour
         {
             UIExpandOrShrinkTowerMenu();
         }
-        if (_buttonClicked == towerTileTowerInfoGO.transform.Find("SellButton").gameObject)
+        if (_buttonClicked.name == sellButtonOnTowerTileUI.name)
         {
             RemoveTowerFromTowerTile();
+            DeselectTowerTile();
         }
-        if (_buttonClicked.transform.parent.name == towerTileTowerInfoGO.name)
+        if (_buttonClicked.name == closeButtonOnTowerTileUI.name)
         {
             DeselectTowerTile();
         }
