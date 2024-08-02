@@ -7,6 +7,17 @@ public class TowerTileHandler : MonoBehaviour
     private bool isTowerTileOccupied = false;
     private Renderer _towerTileChildTowerRenderer;
 
+    #region Unity
+    private void Start()
+    {
+        EventSystemManager.Instance.onTriggerTowerTileSellTower += SellAndRemoveTower;
+    }
+    private void OnDestroy()
+    {
+        EventSystemManager.Instance.onTriggerTowerTileSellTower -= SellAndRemoveTower;
+    }
+    #endregion
+
     #region Mouse clicks
     private void OnMouseDown()
     {
@@ -121,9 +132,9 @@ public class TowerTileHandler : MonoBehaviour
         return _towerTileChildTowerRenderer;
     }
 
-    private void GenerateTowerMaterial(GameObject _towerGO, string resourceName)
+    private void GenerateTowerMaterial(GameObject _gameObject, string resourceName)
     {
-        Renderer _rend = _towerGO.GetComponent<Renderer>();
+        Renderer _rend = _gameObject.GetComponent<Renderer>();
         _rend.material = Resources.Load($"Materials/{resourceName}") as Material;
         GetTowerRenderer().material = _rend.material;
     }
@@ -140,9 +151,26 @@ public class TowerTileHandler : MonoBehaviour
         if (!isTowerTileOccupied) { isTowerTileOccupied = true; }
     }
 
+    private void TileIsNoLongerOccupied()
+    {
+        if (isTowerTileOccupied) { isTowerTileOccupied = false; }
+    }
+
     private bool IsTowerTileOccupied()
     {
         return isTowerTileOccupied;
+    }
+    #endregion
+
+    #region events
+    private void SellAndRemoveTower(GameObject _currentlySelectedTowerTile)
+    {
+        if (_currentlySelectedTowerTile == this.gameObject)
+        {
+            Destroy(gameObject.transform.GetChild(0).gameObject);
+            GenerateTowerMaterial(_currentlySelectedTowerTile, "RockCliff_Layered");
+            TileIsNoLongerOccupied();
+        }
     }
     #endregion
 }

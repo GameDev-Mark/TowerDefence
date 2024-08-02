@@ -2,6 +2,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
+using Unity.Profiling;
 
 public class UIGameManager : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class UIGameManager : MonoBehaviour
     private GameObject towerGroupContainer;
     private GameObject towerTileTowerInfoGO;
     private GameObject expandOrShrinkTowerMenuButton;
+    private GameObject currentlySelectedTowerTile;
 
     private Animator uiTowerMenuAnimator;
 
@@ -123,6 +125,7 @@ public class UIGameManager : MonoBehaviour
         towerTileTowerInfoGO = transform.Find("TowerTileTowerInfo").gameObject;
         towerTileTowerInfoGO.SetActive(false);
         AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject);
+        AddOnClickListenerToButton(towerTileTowerInfoGO.transform.Find("SellButton").gameObject);
     }
 
     private void ActivateTowerPopupMenu()
@@ -156,6 +159,19 @@ public class UIGameManager : MonoBehaviour
             }
         }
     }
+
+    private void DeselectTowerTile()
+    {
+        towerTileTowerInfoGO.SetActive(false);
+        currentlySelectedTowerTile = null;
+        Debug.Log($"deactivate or activate");
+    }
+
+    private void RemoveTowerFromTowerTile()
+    {
+        Debug.Log($"Sell tower.. ");
+        EventSystemManager.Instance.TriggerTowerTileSellTower(currentlySelectedTowerTile);
+    }
     #endregion
 
     #region TowerMenu animation info
@@ -186,6 +202,7 @@ public class UIGameManager : MonoBehaviour
     {
         ActivateTowerPopupMenu();
         ShowCorrectTowerStatsOnTowerPopup(_towerTileClickedOn);
+        currentlySelectedTowerTile = _towerTileClickedOn;
     }
     #endregion
 
@@ -202,13 +219,17 @@ public class UIGameManager : MonoBehaviour
             TowerStatsAndInfo towerStats = _buttonClicked.GetComponent<TowerStatsAndInfo>();
             EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
         }
-        if (_buttonClicked.transform.parent.name == towerTileTowerInfoGO.name)
-        {
-            towerTileTowerInfoGO.SetActive(false);
-        }
         if (_buttonClicked.name == expandOrShrinkTowerMenuButton.name)
         {
             UIExpandOrShrinkTowerMenu();
+        }
+        if (_buttonClicked == towerTileTowerInfoGO.transform.Find("SellButton").gameObject)
+        {
+            RemoveTowerFromTowerTile();
+        }
+        if (_buttonClicked.transform.parent.name == towerTileTowerInfoGO.name)
+        {
+            DeselectTowerTile();
         }
     }
     #endregion

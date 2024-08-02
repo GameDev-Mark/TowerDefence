@@ -23,6 +23,16 @@ public class EventSystemManager : Singleton<EventSystemManager>
         }
     }
 
+    public event Action<GameObject> onTriggerTowerTileSellTower;
+    public void TriggerTowerTileSellTower(GameObject _currentlySelectedTowerTile)
+    {
+        if (onTriggerTowerTileSellTower != null)
+        {
+            onTriggerTowerTileSellTower(_currentlySelectedTowerTile);
+        }
+    }
+
+
     public event Action onTriggerSceneGameReset;
     public void TriggerSceneGameReset()
     {
