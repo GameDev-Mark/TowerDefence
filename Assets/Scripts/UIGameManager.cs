@@ -164,12 +164,10 @@ public class UIGameManager : MonoBehaviour
     {
         towerTileTowerInfoGO.SetActive(false);
         currentlySelectedTowerTile = null;
-        Debug.Log($"deactivate or activate");
     }
 
     private void RemoveTowerFromTowerTile()
     {
-        Debug.Log($"Sell tower.. ");
         EventSystemManager.Instance.TriggerTowerTileSellTower(currentlySelectedTowerTile);
     }
     #endregion
