@@ -52,8 +52,11 @@ public class TowerTileHandler : MonoBehaviour
         }
         else
         {
-            EventSystemManager.Instance.TriggerTowerTileClick(gameObject);
-            //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
+            if (string.IsNullOrEmpty(GameManager.Instance.GetCurrentlySelectedTower()))
+            {
+                EventSystemManager.Instance.TriggerTowerTileClick(gameObject);
+                //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
+            }
         }
     }
     #endregion
