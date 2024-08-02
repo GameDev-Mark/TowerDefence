@@ -5,6 +5,7 @@ using Object = UnityEngine.Object;
 
 public class EventSystemManager : Singleton<EventSystemManager>
 {
+    #region tower interactions
     public event Action<string> onTriggerCurrentTower;
     public void TriggerCurrentTower(string currentlySelectedTowerName)
     {
@@ -32,7 +33,17 @@ public class EventSystemManager : Singleton<EventSystemManager>
         }
     }
 
+    public event Action<GameObject> onTriggerTowerTileUpgradeTower;
+    public void TriggerTowerTileUpgradeTower(GameObject _currentlySelectedTowerTile)
+    {
+        if (onTriggerTowerTileUpgradeTower != null)
+        {
+            onTriggerTowerTileUpgradeTower(_currentlySelectedTowerTile);
+        }
+    }
+    #endregion
 
+    #region Scenes
     public event Action onTriggerSceneGameReset;
     public void TriggerSceneGameReset()
     {
@@ -41,7 +52,9 @@ public class EventSystemManager : Singleton<EventSystemManager>
             onTriggerSceneGameReset();
         }
     }
+    #endregion
 
+    #region Resources
     public event Action<List<Object>> onTriggerResourceFolderLoaded;
     public void TriggerResourceFolderLoaded(List<Object> listOfTowersFromResource)
     {
@@ -50,4 +63,5 @@ public class EventSystemManager : Singleton<EventSystemManager>
             onTriggerResourceFolderLoaded(listOfTowersFromResource);
         }
     }
+    #endregion
 }

@@ -2,7 +2,6 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
-using Unity.Profiling;
 
 public class UIGameManager : MonoBehaviour
 {
@@ -13,6 +12,7 @@ public class UIGameManager : MonoBehaviour
     private GameObject currentlySelectedTowerTile;
     private GameObject closeButtonOnTowerTileUI;
     private GameObject sellButtonOnTowerTileUI;
+    private GameObject upgradeButtonOnTowerTileUI;
 
     private Animator uiTowerMenuAnimator;
 
@@ -129,9 +129,11 @@ public class UIGameManager : MonoBehaviour
 
         closeButtonOnTowerTileUI = towerTileTowerInfoGO.transform.Find("CloseWindowButton").gameObject;
         sellButtonOnTowerTileUI = towerTileTowerInfoGO.transform.Find("SellButton").gameObject;
+        upgradeButtonOnTowerTileUI = towerTileTowerInfoGO.transform.Find("UpgradeButton").gameObject;
 
         AddOnClickListenerToButton(closeButtonOnTowerTileUI);
         AddOnClickListenerToButton(sellButtonOnTowerTileUI);
+        AddOnClickListenerToButton(upgradeButtonOnTowerTileUI);
     }
 
     private void ActivateTowerPopupMenu()
@@ -172,8 +174,20 @@ public class UIGameManager : MonoBehaviour
         currentlySelectedTowerTile = null;
     }
 
-    private void RemoveTowerFromTowerTile()
+    private void UpgradeTowerButtonFromTowerTilePopup()
     {
+        Debug.Log($"Upgrade tower clicked...");
+        EventSystemManager.Instance.TriggerTowerTileUpgradeTower(currentlySelectedTowerTile);
+        ///todo
+        // shoot event
+        // upgrade specific stat on the selected tower ( not sure how the upgrades are gonna work yet )
+        // UI upgrade stats change - visuals
+        // other scripts then subscribe to this event - tileHandler?
+    }
+
+    private void SellTowerButtonFromTowerTilePopup()
+    {
+        Debug.Log($"Sell tower clicked...");
         EventSystemManager.Instance.TriggerTowerTileSellTower(currentlySelectedTowerTile);
     }
     #endregion
@@ -229,8 +243,12 @@ public class UIGameManager : MonoBehaviour
         }
         if (_buttonClicked.name == sellButtonOnTowerTileUI.name)
         {
-            RemoveTowerFromTowerTile();
+            SellTowerButtonFromTowerTilePopup();
             DeselectTowerTile();
+        }
+        if (_buttonClicked.name == upgradeButtonOnTowerTileUI.name)
+        {
+            UpgradeTowerButtonFromTowerTilePopup();
         }
         if (_buttonClicked.name == closeButtonOnTowerTileUI.name)
         {
