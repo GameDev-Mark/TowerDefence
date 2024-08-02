@@ -1,6 +1,7 @@
 using System.Collections;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class TowerTileHandler : MonoBehaviour
 {
@@ -21,7 +22,10 @@ public class TowerTileHandler : MonoBehaviour
     #region Mouse clicks
     private void OnMouseDown()
     {
-        ClickOnTowerTile();
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            ClickOnTowerTile();
+        }
     }
     private void OnMouseOver()
     {
