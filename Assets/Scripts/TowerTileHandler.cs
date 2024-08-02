@@ -29,16 +29,25 @@ public class TowerTileHandler : MonoBehaviour
     }
     private void OnMouseOver()
     {
-        TowerVisualWhenHovering();
-        //Debug.Log($"On mouse HOVERING.. towerManager.cs");
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            TowerVisualWhenHovering();
+            //Debug.Log($"On mouse HOVERING.. towerManager.cs");
+        }
     }
     private void OnMouseExit()
     {
-        TowerVisualWhenHoveringIsDone();
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            TowerVisualWhenHoveringIsDone();
+        }
     }
     private void OnMouseEnter()
     {
-        //Debug.Log($"On mouse enter.. towerManager.cs");
+        if (!EventSystem.current.IsPointerOverGameObject())
+        {
+            //Debug.Log($"On mouse enter.. towerManager.cs");
+        }
     }
     #endregion
 
