@@ -160,17 +160,17 @@ public class UIGameManager : MonoBehaviour
             if (child.GetComponentInChildren<TMP_Text>())
             {
                 if (childLoopCount == 0)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Tower Name\n{_towerStats.TowerName()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $"{_towerStats.TowerName()}";
                 if (childLoopCount == 1)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Description\n{_towerStats.TowerDescription()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $"{_towerStats.TowerDescription()}";
                 if (childLoopCount == 2)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Damage\n{_towerStats.AttackDamage()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $":{_towerStats.AttackDamage()}";
                 if (childLoopCount == 3)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Range\n{_towerStats.AttackRange()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $":{_towerStats.AttackRange()}";
                 if (childLoopCount == 4)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Attack Speed\n{_towerStats.AttackSpeed()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $":{_towerStats.AttackSpeed()}";
                 if (childLoopCount == 5)
-                    child.GetComponentInChildren<TMP_Text>().text = $"Tower Type\n{_towerStats.TowerType()}";
+                    child.GetComponentInChildren<TMP_Text>().text = $":{_towerStats.TowerType()}";
                 childLoopCount++;
             }
         }
