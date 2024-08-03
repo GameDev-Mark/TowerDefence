@@ -141,10 +141,13 @@ public class UIGameManager : MonoBehaviour
         AddOnClickListenerToButton(upgradeButtonOnTowerTileUI);
     }
 
-    private void ActivateTowerPopupMenu()
+    private void ActivateTowerPopupMenu(GameObject _towerTileClickedOn)
     {
         towerTileTowerInfoGO.SetActive(true);
-        towerTileTowerInfoGO.transform.position = Input.mousePosition + new Vector3(100, 95);
+        Vector3 screenPos = Camera.main.WorldToScreenPoint(_towerTileClickedOn.transform.position);
+        screenPos.y += Screen.height * 0.1f;
+        screenPos.x += Screen.width * 0.1f;
+        towerTileTowerInfoGO.transform.position = screenPos;
     }
 
     private void ShowCorrectTowerStatsOnTowerPopup(GameObject _towerTileClickedOn)
@@ -223,7 +226,7 @@ public class UIGameManager : MonoBehaviour
 
     private void SubscribeToTowerTileClickedOn(GameObject _towerTileClickedOn)
     {
-        ActivateTowerPopupMenu();
+        ActivateTowerPopupMenu(_towerTileClickedOn);
         ShowCorrectTowerStatsOnTowerPopup(_towerTileClickedOn);
         currentlySelectedTowerTile = _towerTileClickedOn;
     }
