@@ -3,7 +3,7 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
-    string currentlySelectedTowerName;
+    string currentlySelectedTowerNameFromTowerMenu;
     private List<Object> listOfTowersFromDirectory;
 
     #region Unity
@@ -16,26 +16,26 @@ public class GameManager : Singleton<GameManager>
     }
     private void Start()
     {
-        EventSystemManager.Instance.onTriggerCurrentTower += SetCurrentlySelectedTower;
+        EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu += SetCurrentlySelectedTowerFromTowerMenu;
     }
     private void OnDestroy()
     {
         EventSystemManager.Instance.onTriggerResourceFolderLoaded -= SetResourceFolder;
-        EventSystemManager.Instance.onTriggerCurrentTower -= SetCurrentlySelectedTower;
+        EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu -= SetCurrentlySelectedTowerFromTowerMenu;
     }
     #endregion
 
     #region Set some info
-    private void SetCurrentlySelectedTower(string _currentlySelectedTowerName)
+    private void SetCurrentlySelectedTowerFromTowerMenu(string _currentlySelectedTowerNameFromTowerMenu)
     {
-        currentlySelectedTowerName = _currentlySelectedTowerName;
+        currentlySelectedTowerNameFromTowerMenu = _currentlySelectedTowerNameFromTowerMenu;
     }
     #endregion
 
     #region public functions 
-    public string GetCurrentlySelectedTower()
+    public string GetCurrentlySelectedTowerFromTowerMenu()
     {
-        return currentlySelectedTowerName;
+        return currentlySelectedTowerNameFromTowerMenu;
     }
     public List<Object> ReturnListOfTowersFromResourceFolder()
     {

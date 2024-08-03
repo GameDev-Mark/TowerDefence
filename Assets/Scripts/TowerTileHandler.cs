@@ -6,16 +6,21 @@ using UnityEngine.EventSystems;
 public class TowerTileHandler : MonoBehaviour
 {
     private bool isTowerTileOccupied = false;
+    private bool isTowerTileMenuPopupActive = false;
     private Renderer _towerTileChildTowerRenderer;
 
     #region Unity
     private void Start()
     {
         EventSystemManager.Instance.onTriggerTowerTileSellTower += SellAndRemoveTower;
+        EventSystemManager.Instance.onTriggerTowerTileClick += TowerVisualHighlightWhenTowerPopupIsActivate;
+        EventSystemManager.Instance.onTriggerTowerTileClosePopup += TowerVisualUnhighlightTowerOnTowerPopClose;
     }
     private void OnDestroy()
     {
         EventSystemManager.Instance.onTriggerTowerTileSellTower -= SellAndRemoveTower;
+        EventSystemManager.Instance.onTriggerTowerTileClick -= TowerVisualHighlightWhenTowerPopupIsActivate;
+        EventSystemManager.Instance.onTriggerTowerTileClosePopup -= TowerVisualUnhighlightTowerOnTowerPopClose;
     }
     #endregion
 
@@ -58,7 +63,7 @@ public class TowerTileHandler : MonoBehaviour
         }
         else
         {
-            if (string.IsNullOrEmpty(GameManager.Instance.GetCurrentlySelectedTower()))
+            if (string.IsNullOrEmpty(GameManager.Instance.GetCurrentlySelectedTowerFromTowerMenu()))
             {
                 EventSystemManager.Instance.TriggerTowerTileClick(gameObject);
                 //StartCoroutine(TowerVisualWhenClickedOn(Color.gray, Color.blue, Color.gray));
@@ -72,11 +77,11 @@ public class TowerTileHandler : MonoBehaviour
     {
         foreach (var child in GameManager.Instance.ReturnListOfTowersFromResourceFolder())
         {
-            if (child.GetComponent<TowerStatsAndInfo>().TowerName() == GameManager.Instance.GetCurrentlySelectedTower())
+            if (child.GetComponent<TowerStatsAndInfo>().TowerName() == GameManager.Instance.GetCurrentlySelectedTowerFromTowerMenu())
             {
                 GameObject _tower = Instantiate(child) as GameObject;
                 CreateGameObjectInfo(_tower, gameObject);
-                EventSystemManager.Instance.TriggerCurrentTower(null);
+                EventSystemManager.Instance.TriggerCurrentlySelectedTowerFromTowerMenu(null);
                 _towerTileChildTowerRenderer = gameObject.transform.GetChild(0).GetComponent<Renderer>();
             }
         }
@@ -108,35 +113,88 @@ public class TowerTileHandler : MonoBehaviour
 
     private void TowerVisualWhenHovering()
     {
-        if (!IsTowerTileOccupied())
+        if (!isTowerTileMenuPopupActive)
         {
-            GetTowerRenderer().material.color = Color.green;
+            if (!IsTowerTileOccupied())
+            {
+                GetTowerRenderer().material.color = Color.green;
 
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().material.color = Color.green;
-        }
-        else
-        {
-            GetTowerRenderer().material.color = Color.yellow;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().material.color = Color.green;
+            }
+            else
+            {
+                GetTowerRenderer().material.color = Color.yellow;
 
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().material.color = Color.yellow;
+            }
         }
     }
 
     private void TowerVisualWhenHoveringIsDone()
     {
-        if (!IsTowerTileOccupied())
+        if (!isTowerTileMenuPopupActive)
         {
-            GetTowerRenderer().material.color = Color.white;
-            if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
+            if (!IsTowerTileOccupied())
+            {
+                GetTowerRenderer().material.color = Color.white;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
+            }
+            else
+            {
+                GetTowerRenderer().material.color = Color.gray;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
+            }
         }
-        else
+    }
+
+    private void TowerVisualHighlightWhenTowerPopupIsActivate(GameObject _towerTile)
+    {
+        if (_towerTile == this.gameObject)
         {
-            GetTowerRenderer().material.color = Color.gray;
+            isTowerTileMenuPopupActive = true;
+            GetTowerRenderer().material.color = Color.cyan;
             if (GetChildTowerMaterialInTowerTile() != null)
-                GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
+                GetChildTowerMaterialInTowerTile().material.color = Color.cyan;
+        }
+        else if (_towerTile != this.gameObject)
+        {
+            if (!IsTowerTileOccupied())
+            {
+                GetTowerRenderer().material.color = Color.white;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
+            }
+            else
+            {
+                GetTowerRenderer().material.color = Color.gray;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
+            }
+        }
+    }
+
+    private void TowerVisualUnhighlightTowerOnTowerPopClose(GameObject _towerTile)
+    {
+        if (_towerTile == this.gameObject)
+        {
+            isTowerTileMenuPopupActive = false;
+
+            if (!IsTowerTileOccupied())
+            {
+                GetTowerRenderer().material.color = Color.white;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.white;
+            }
+            else
+            {
+                GetTowerRenderer().material.color = Color.gray;
+                if (GetChildTowerMaterialInTowerTile() != null)
+                    GetChildTowerMaterialInTowerTile().GetComponent<Renderer>().material.color = Color.gray;
+            }
         }
     }
 
@@ -183,6 +241,7 @@ public class TowerTileHandler : MonoBehaviour
             Destroy(gameObject.transform.GetChild(0).gameObject);
             GenerateTowerMaterial(_currentlySelectedTowerTile, "RockCliff_Layered");
             TileIsNoLongerOccupied();
+            GetTowerRenderer().material.color = Color.white;
         }
     }
     #endregion

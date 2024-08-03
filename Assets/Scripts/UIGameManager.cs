@@ -27,7 +27,7 @@ public class UIGameManager : MonoBehaviour
     }
     private void Start()
     {
-        EventSystemManager.Instance.onTriggerCurrentTower += SubscribeToTowerSelection;
+        EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu += SubscribeToTowerSelection;
         EventSystemManager.Instance.onTriggerTowerTileClick += SubscribeToTowerTileClickedOn;
         LoadUITowerButtons();
     }
@@ -38,7 +38,7 @@ public class UIGameManager : MonoBehaviour
     }
     private void OnDestroy()
     {
-        EventSystemManager.Instance.onTriggerCurrentTower -= SubscribeToTowerSelection;
+        EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu -= SubscribeToTowerSelection;
         EventSystemManager.Instance.onTriggerTowerTileClick -= SubscribeToTowerTileClickedOn;
     }
     #endregion
@@ -55,7 +55,7 @@ public class UIGameManager : MonoBehaviour
     {
         if (Input.GetMouseButtonDown(1))
         {
-            EventSystemManager.Instance.TriggerCurrentTower(null);
+            EventSystemManager.Instance.TriggerCurrentlySelectedTowerFromTowerMenu(null);
         }
     }
     #endregion
@@ -178,6 +178,7 @@ public class UIGameManager : MonoBehaviour
 
     private void DeselectTowerTile()
     {
+        EventSystemManager.Instance.TriggerTowerTileClosePopup(currentlySelectedTowerTile);
         towerTileTowerInfoGO.SetActive(false);
         currentlySelectedTowerTile = null;
     }
@@ -243,7 +244,7 @@ public class UIGameManager : MonoBehaviour
         if (_buttonClicked.GetComponent<TowerStatsAndInfo>())
         {
             TowerStatsAndInfo towerStats = _buttonClicked.GetComponent<TowerStatsAndInfo>();
-            EventSystemManager.Instance.TriggerCurrentTower(towerStats.TowerName());
+            EventSystemManager.Instance.TriggerCurrentlySelectedTowerFromTowerMenu(towerStats.TowerName());
         }
         if (_buttonClicked.name == expandOrShrinkTowerMenuButton.name)
         {

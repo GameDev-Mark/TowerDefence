@@ -6,12 +6,12 @@ using Object = UnityEngine.Object;
 public class EventSystemManager : Singleton<EventSystemManager>
 {
     #region tower interactions
-    public event Action<string> onTriggerCurrentTower;
-    public void TriggerCurrentTower(string currentlySelectedTowerName)
+    public event Action<string> onTriggerCurrentlySelectedTowerFromTowerMenu;
+    public void TriggerCurrentlySelectedTowerFromTowerMenu(string currentlySelectedTowerName)
     {
-        if(onTriggerCurrentTower != null)
+        if(onTriggerCurrentlySelectedTowerFromTowerMenu != null)
         {
-            onTriggerCurrentTower(currentlySelectedTowerName);
+            onTriggerCurrentlySelectedTowerFromTowerMenu(currentlySelectedTowerName);
         }
     }
 
@@ -39,6 +39,15 @@ public class EventSystemManager : Singleton<EventSystemManager>
         if (onTriggerTowerTileUpgradeTower != null)
         {
             onTriggerTowerTileUpgradeTower(_currentlySelectedTowerTile);
+        }
+    }
+
+    public event Action<GameObject> onTriggerTowerTileClosePopup;
+    public void TriggerTowerTileClosePopup(GameObject _currentlySelectedTowerTile)
+    {
+        if (onTriggerTowerTileClosePopup != null)
+        {
+            onTriggerTowerTileClosePopup(_currentlySelectedTowerTile);
         }
     }
     #endregion
