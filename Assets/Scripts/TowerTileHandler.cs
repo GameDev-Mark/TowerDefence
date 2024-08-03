@@ -37,10 +37,7 @@ public class TowerTileHandler : MonoBehaviour
     }
     private void OnMouseExit()
     {
-        if (!EventSystem.current.IsPointerOverGameObject())
-        {
-            TowerVisualWhenHoveringIsDone();
-        }
+        TowerVisualWhenHoveringIsDone();
     }
     private void OnMouseEnter()
     {
