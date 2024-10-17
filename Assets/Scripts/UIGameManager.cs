@@ -1,6 +1,7 @@
 using Unity.VisualScripting;
-using UnityEngine;
+using System.Collections;
 using UnityEngine.UI;
+using UnityEngine;
 using TMPro;
 
 public class UIGameManager : MonoBehaviour
@@ -14,6 +15,8 @@ public class UIGameManager : MonoBehaviour
     private GameObject sellButtonOnTowerTileUI;
     private GameObject upgradeButtonOnTowerTileUI;
 
+    private TMP_Text inGameCurrencyAmountUI;
+
     private Animator uiTowerMenuAnimator;
 
     #region Unity Functions
@@ -23,12 +26,16 @@ public class UIGameManager : MonoBehaviour
         SetupTowerMenuAnimationInfo();
         SetupTowerPopupMenuInfo();
 
+        inGameCurrencyAmountUI = transform.Find("CurrencyContainer/CurrencyAmountContainer/CurrencyTextBg/CurrencyText").GetComponent<TMP_Text>();
         towerGroupContainer = uiTowerMenuAnimator.transform.GetChild(1).gameObject;
     }
     private void Start()
     {
         EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu += SubscribeToTowerSelection;
         EventSystemManager.Instance.onTriggerTowerTileClick += SubscribeToTowerTileClickedOn;
+        EventSystemManager.Instance.onTriggerUpdateInGameCurrnecy += SubscribeToUpdateInGameCurrency;
+
+        InGameDisplayInfo();
         LoadUITowerButtons();
     }
     private void Update()
@@ -40,6 +47,7 @@ public class UIGameManager : MonoBehaviour
     {
         EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu -= SubscribeToTowerSelection;
         EventSystemManager.Instance.onTriggerTowerTileClick -= SubscribeToTowerTileClickedOn;
+        EventSystemManager.Instance.onTriggerUpdateInGameCurrnecy -= SubscribeToUpdateInGameCurrency;
     }
     #endregion
 
@@ -231,9 +239,35 @@ public class UIGameManager : MonoBehaviour
         ShowCorrectTowerStatsOnTowerPopup(_towerTileClickedOn);
         currentlySelectedTowerTile = _towerTileClickedOn;
     }
+
+    public void SubscribeToUpdateInGameCurrency(int _currentCurrenyAmount, int _updateCurrencyAmountBy)
+    {
+        StartCoroutine(UpdateInGameCurrency(_currentCurrenyAmount, _updateCurrencyAmountBy));
+    }
     #endregion
 
-    #region Button events
+    #region In Game 
+    private IEnumerator UpdateInGameCurrency(int _currentCurrenyAmount, int _updateCurrencyAmountBy)
+    {
+        int counter = 0;
+        int currencyUpdaterAmountHolder = 0 + _updateCurrencyAmountBy;
+        while (currencyUpdaterAmountHolder > 0) // visually update the currency, so it counts out how much it is incrementating by (1,2,3,4 instead of 1 to 4)
+        {
+            yield return new WaitForSeconds(0.1f);
+            currencyUpdaterAmountHolder--;
+            counter++;
+            inGameCurrencyAmountUI.text = $"{_currentCurrenyAmount + counter}";
+        }
+        yield return null;
+    }
+
+    private void InGameDisplayInfo()
+    {
+        inGameCurrencyAmountUI.text = $"{GameManager.Instance.GetCurrentCurrencyAmount()}";
+    }
+    #endregion
+
+        #region Button events
     private void AddOnClickListenerToButton(GameObject _buttonGO)
     {
         _buttonGO.GetComponent<Button>().onClick.AddListener(delegate { ButtonClicks(_buttonGO.gameObject); });

@@ -1,7 +1,7 @@
-using System;
+using Object = UnityEngine.Object;
 using System.Collections.Generic;
 using UnityEngine;
-using Object = UnityEngine.Object;
+using System;
 
 public class EventSystemManager : Singleton<EventSystemManager>
 {
@@ -48,6 +48,17 @@ public class EventSystemManager : Singleton<EventSystemManager>
         if (onTriggerTowerTileClosePopup != null)
         {
             onTriggerTowerTileClosePopup(_currentlySelectedTowerTile);
+        }
+    }
+    #endregion
+
+    #region Currency
+    public event Action<int, int> onTriggerUpdateInGameCurrnecy;
+    public void TriggerUpdateInGameCurrnecy(int _currentCurrencyAmount, int _updateCurrencyAmountBy)
+    {
+        if (onTriggerUpdateInGameCurrnecy != null)
+        {
+            onTriggerUpdateInGameCurrnecy(_currentCurrencyAmount, _updateCurrencyAmountBy);
         }
     }
     #endregion

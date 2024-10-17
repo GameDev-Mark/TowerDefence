@@ -3,8 +3,9 @@ using UnityEngine;
 
 public class GameManager : Singleton<GameManager>
 {
-    string currentlySelectedTowerNameFromTowerMenu;
+    private string currentlySelectedTowerNameFromTowerMenu;
     private List<Object> listOfTowersFromDirectory;
+    private int inGameCurrencyAmount;
 
     #region Unity
     // override awake from singleton .. since Resources folder loads just after scene load from TowerDirectory.cs
@@ -17,6 +18,8 @@ public class GameManager : Singleton<GameManager>
     private void Start()
     {
         EventSystemManager.Instance.onTriggerCurrentlySelectedTowerFromTowerMenu += SetCurrentlySelectedTowerFromTowerMenu;
+        EventSystemManager.Instance.onTriggerUpdateInGameCurrnecy += UpdateInGameCurrency;
+        InitialGameStartStats();
     }
     private void OnDestroy()
     {
@@ -30,6 +33,10 @@ public class GameManager : Singleton<GameManager>
     {
         currentlySelectedTowerNameFromTowerMenu = _currentlySelectedTowerNameFromTowerMenu;
     }
+    private void InitialGameStartStats()
+    {
+        inGameCurrencyAmount = 0;
+    }
     #endregion
 
     #region public functions 
@@ -41,10 +48,23 @@ public class GameManager : Singleton<GameManager>
     {
         return listOfTowersFromDirectory;
     }
+    public int GetCurrentCurrencyAmount()
+    {
+        return inGameCurrencyAmount;
+    }
     #endregion
 
+    #region currency
+    private void UpdateInGameCurrency(int _currencyAmount, int _updateCurrencyAmountBy)
+    {
+        inGameCurrencyAmount = _currencyAmount + _updateCurrencyAmountBy;
+    }
+    #endregion
+
+    #region setup List<> of towers from resource folder .. setting objects
     private void SetResourceFolder(List<Object> _listOfTowersFromResource)
     {
         listOfTowersFromDirectory = _listOfTowersFromResource;
     }
+    #endregion
 }

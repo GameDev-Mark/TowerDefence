@@ -18,6 +18,11 @@ public class EnemyBehaviour : MonoBehaviour
         EnemyMovement();
     }
 
+    private void OnDestroy()
+    {
+        TriggerGainCurrencyFromEnemy();
+    }
+
     private void EnemyMovement()
     {
         // increment counter every time enemy hits checkpoint
@@ -41,5 +46,11 @@ public class EnemyBehaviour : MonoBehaviour
         // then start moving towards the waypoint position
         transform.LookAt(generateMap.waypointsList[counterHowManyWaypointsHasEnemyHit].transform.position);
         transform.position = Vector3.MoveTowards(transform.position, generateMap.waypointsList[counterHowManyWaypointsHasEnemyHit].transform.position, moveSpeed * Time.deltaTime);
+    }
+
+    private void TriggerGainCurrencyFromEnemy() // randomize how much currency is gained and fire the event, passing off the values
+    {
+        int randomCurrencyGained = Random.Range(2, 10);
+        EventSystemManager.Instance.TriggerUpdateInGameCurrnecy(GameManager.Instance.GetCurrentCurrencyAmount(), randomCurrencyGained);
     }
 }
