@@ -6,7 +6,7 @@ public class EnemyBehaviour : MonoBehaviour
 
     private float moveSpeed = 1f;
 
-    private int CounterHowManyWaypointsHasEnemyHit = 0;
+    private int counterHowManyWaypointsHasEnemyHit = 0;
 
     private void Awake()
     {
@@ -22,11 +22,11 @@ public class EnemyBehaviour : MonoBehaviour
     {
         // increment counter every time enemy hits checkpoint
         // catch this counter so it does not go over the actual waypoint list count
-        if (transform.position == generateMap.waypointsList[CounterHowManyWaypointsHasEnemyHit].transform.position)
+        if (transform.position == generateMap.waypointsList[counterHowManyWaypointsHasEnemyHit].transform.position)
         {
-            if (CounterHowManyWaypointsHasEnemyHit < generateMap.waypointsList.Count - 1)
+            if (counterHowManyWaypointsHasEnemyHit < generateMap.waypointsList.Count - 1)
             {
-                CounterHowManyWaypointsHasEnemyHit++;
+                counterHowManyWaypointsHasEnemyHit++;
             }
         }
 
@@ -39,7 +39,7 @@ public class EnemyBehaviour : MonoBehaviour
 
         // rotate towards the waypoint first
         // then start moving towards the waypoint position
-        transform.LookAt(generateMap.waypointsList[CounterHowManyWaypointsHasEnemyHit].transform.position);
-        transform.position = Vector3.MoveTowards(transform.position, generateMap.waypointsList[CounterHowManyWaypointsHasEnemyHit].transform.position, moveSpeed * Time.deltaTime);
+        transform.LookAt(generateMap.waypointsList[counterHowManyWaypointsHasEnemyHit].transform.position);
+        transform.position = Vector3.MoveTowards(transform.position, generateMap.waypointsList[counterHowManyWaypointsHasEnemyHit].transform.position, moveSpeed * Time.deltaTime);
     }
 }
